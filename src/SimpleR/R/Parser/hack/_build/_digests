@@ -1,0 +1,4 @@
+"Rule: ocaml: menhir dependencies (%=port/parser )": "?\175\254\183\129\006Y,fhVOO\172Mq"
+"Resource: /home/celery/foo/harvard/simple-r/src/SimpleR/R/Parser/hack/port/parser.mly": "\138/3w\024\186-\171d\004\235\232\209\211\001{"
+"Resource: /home/celery/foo/harvard/simple-r/src/SimpleR/R/Parser/hack/port/rast.ml": "\161r\227Wv\214w\248:\240\144\145\234\183HP"
+"Resource: /home/celery/foo/harvard/simple-r/src/SimpleR/R/Parser/hack/port/parser.mllib": "\133\159\201\017\242\173Gi\168\209#SX\238\022\196"
