@@ -5,12 +5,12 @@ import qualified Data.Complex as C
 data RInt =
     RInt Int
   | NAInt
-  deriving (Eq, Show, Read)
+  deriving (Ord, Eq, Show, Read)
 
 data RDouble =
     RDouble Double
   | NADouble
-  deriving (Eq, Show, Read)
+  deriving (Ord, Eq, Show, Read)
 
 data RComplex =
     RComplex (C.Complex Double)
@@ -20,20 +20,20 @@ data RComplex =
 data RBool =
     RBool Int
   | NABool
-  deriving (Eq, Show, Read)
+  deriving (Ord, Eq, Show, Read)
 
 data RString =
     RString String
   | NAString
-  deriving (Eq, Show, Read)
+  deriving (Ord, Eq, Show, Read)
 
-data IdentAnnot = IdentAnnot deriving (Eq, Show, Read)
+data IdentAnnot = IdentAnnot deriving (Ord, Eq, Show, Read)
 
 data Ident = Ident
   { id_pkg :: Maybe RString
   , id_name :: RString
   , id_annot :: IdentAnnot
-  } deriving (Eq, Show, Read)
+  } deriving (Ord, Eq, Show, Read)
 
 data TickAnnot = TickAnnot deriving (Eq, Show, Read)
 
@@ -43,7 +43,7 @@ data Tick = Tick
 
 data MemRef = MemRef
   { mem_addr :: Int
-  } deriving (Eq, Show, Read)
+  } deriving (Ord, Eq, Show, Read)
 
 data Const =
     IntConst RInt
