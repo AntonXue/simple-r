@@ -2,87 +2,87 @@ module SimpleR.Language.Syntax where
 
 import qualified Data.Complex as C
 
-data RInt =
-    RInt Int
-  | NAInt
+data SInt =
+    SInt Int
+  | SNaInt
   deriving (Ord, Eq, Show, Read)
 
-data RDouble =
-    RDouble Double
-  | NADouble
+data SDouble =
+    SDouble Double
+  | SNaDouble
   deriving (Ord, Eq, Show, Read)
 
-data RComplex =
-    RComplex (C.Complex Double)
-  | NAComplex
+data SComplex =
+    SComplex (C.Complex Double)
+  | SNaComplex
   deriving (Eq, Show, Read)
 
-data RBool =
-    RBool Int
-  | NABool
+data SBool =
+    SBool Int
+  | SNaBool
   deriving (Ord, Eq, Show, Read)
 
-data RString =
-    RString String
-  | NAString
+data SString =
+    SString String
+  | SNaString
   deriving (Ord, Eq, Show, Read)
 
-data IdentAnnot = IdentAnnot deriving (Ord, Eq, Show, Read)
+data SIdentAnnot = SIdentAnnot deriving (Ord, Eq, Show, Read)
 
-data Ident = Ident
-  { id_pkg :: Maybe RString
-  , id_name :: RString
-  , id_annot :: IdentAnnot
+data SIdent = SIdent
+  { sid_pkg :: Maybe SString
+  , sid_name :: SString
+  , sid_annot :: SIdentAnnot
   } deriving (Ord, Eq, Show, Read)
 
-data TickAnnot = TickAnnot deriving (Eq, Show, Read)
+data STickAnnot = STickAnnot deriving (Eq, Show, Read)
 
-data Tick = Tick
-  { tick_annot :: TickAnnot
+data STick = STick
+  { stick_annot :: STickAnnot
   } deriving (Eq, Show, Read)
 
-data MemRef = MemRef
-  { mem_addr :: Int
+data SMemRef = SMemRef
+  { smem_addr :: Int
   } deriving (Ord, Eq, Show, Read)
 
-data Const =
-    IntConst RInt
-  | DoubleCont RDouble
-  | ComplexConst RComplex
-  | BoolConst RBool
-  | StringConst RString
-  | NilConst
+data SConst =
+    SIntConst SInt
+  | SDoubleCont SDouble
+  | SComplexConst SComplex
+  | SBoolConst SBool
+  | SStringConst SString
+  | SNilConst
   deriving (Eq, Show, Read)
 
-data Param =
-    Param Ident
-  | Default Ident Expr
-  | VarParam
+data SParam =
+    SParam SIdent
+  | SDefault SIdent SExpr
+  | SVarParam
   deriving (Eq, Show, Read)
 
-data Arg =
-    Arg Expr
-  | Named Ident Expr
-  | VarArg
+data SArg =
+    SArg SExpr
+  | SNamed SIdent SExpr
+  | SVarArg
   deriving (Eq, Show, Read)
 
-data Expr =
-    Var Ident
-  | Mem MemRef
-  | Const Const
-  | Seq [Expr]
-  | LambdaAbs [Param] Expr
-  | LambdaApp Expr [Arg]
-  | NativeLambdaApp Ident [Arg]
-  | Return Expr
-  | Assign Expr Expr
-  | SuperAssign Expr Expr
-  | If Expr Expr Expr
-  | While Expr Expr
-  | Break
-  | Next
-  | Error
-  | Tix Tick Expr
+data SExpr =
+    SVar SIdent
+  | SMem SMemRef
+  | SConst SConst
+  | SSeq [SExpr]
+  | SLambdaAbs [SParam] SExpr
+  | SLambdaApp SExpr [SArg]
+  | SNativeLambdaApp SIdent [SArg]
+  | SReturn SExpr
+  | SAssign SExpr SExpr
+  | SSuperAssign SExpr SExpr
+  | SIf SExpr SExpr SExpr
+  | SWhile SExpr SExpr
+  | SBreak
+  | SNext
+  | SError
+  | STix STick SExpr
   deriving (Eq, Show, Read)
 
 
@@ -90,10 +90,10 @@ data Expr =
 
 -- Numeric
 
-class Numeric a
-instance Numeric RInt
-instance Numeric RDouble
-instance Numeric RComplex
-instance Numeric RBool
+class SNumeric a
+instance SNumeric SInt
+instance SNumeric SDouble
+instance SNumeric SComplex
+instance SNumeric SBool
 
 
