@@ -1,40 +1,52 @@
 ### Starting build.
 # Target: port/parser.mly.depends, tags: { annot, bin_annot, debug, extension:mly, file:port/parser.mly, infer, menhir_ocamldep, ocaml, ocamldep, quiet, traverse, use_menhir, use_parser }
-menhir --raw-depend --ocamldep '/home/celery/.opam/system/bin/ocamlfind ocamldep -modules' port/parser.mly > port/parser.mly.depends # cached
+menhir --raw-depend --ocamldep '/home/celery/.opam/system/bin/ocamlfind ocamldep -modules' port/parser.mly > port/parser.mly.depends
++ menhir --raw-depend --ocamldep '/home/celery/.opam/system/bin/ocamlfind ocamldep -modules' port/parser.mly > port/parser.mly.depends
+File "port/parser.mly", line 36, characters 21-26:
+Warning: the token RBRAX is unused.
+File "port/parser.mly", line 6, characters 15-18:
+Warning: the token TOP is unused.
 # Target: port/rast.ml.depends, tags: { annot, bin_annot, debug, extension:ml, file:port/rast.ml, ocaml, ocamldep, quiet, traverse, use_menhir, use_parser }
-/home/celery/.opam/system/bin/ocamlfind ocamldep -modules port/rast.ml > port/rast.ml.depends # cached
+/home/celery/.opam/system/bin/ocamlfind ocamldep -modules port/rast.ml > port/rast.ml.depends
 # Target: port/rast.cmo, tags: { annot, bin_annot, byte, compile, debug, extension:cmo, extension:ml, file:port/rast.cmo, file:port/rast.ml, implem, ocaml, quiet, traverse, use_menhir, use_parser }
-/home/celery/.opam/system/bin/ocamlfind ocamlc -c -g -annot -bin-annot -I port -I port -o port/rast.cmo port/rast.ml # cached
+/home/celery/.opam/system/bin/ocamlfind ocamlc -c -g -annot -bin-annot -I port -I port -o port/rast.cmo port/rast.ml
 # Target: port/parser.mly, tags: { annot, bin_annot, byte, compile, debug, extension:ml, extension:mly, file:port/parser.ml, file:port/parser.mly, infer, menhir, ocaml, parser, quiet, traverse, use_menhir, use_parser }
-menhir --ocamlc '/home/celery/.opam/system/bin/ocamlfind ocamlc -g -annot -bin-annot -I port -I port' --infer port/parser.mly # cached
+menhir --ocamlc '/home/celery/.opam/system/bin/ocamlfind ocamlc -g -annot -bin-annot -I port -I port' --infer port/parser.mly
++ menhir --ocamlc '/home/celery/.opam/system/bin/ocamlfind ocamlc -g -annot -bin-annot -I port -I port' --infer port/parser.mly
+File "port/parser.mly", line 36, characters 21-26:
+Warning: the token RBRAX is unused.
+File "port/parser.mly", line 6, characters 15-18:
+Warning: the token TOP is unused.
+Warning: one state has shift/reduce conflicts.
+Warning: 35 shift/reduce conflicts were arbitrarily resolved.
 # Target: port/parser.mli.depends, tags: { annot, bin_annot, debug, extension:mli, file:port/parser.mli, ocaml, ocamldep, quiet, traverse, use_menhir, use_parser }
-/home/celery/.opam/system/bin/ocamlfind ocamldep -modules port/parser.mli > port/parser.mli.depends # cached
+/home/celery/.opam/system/bin/ocamlfind ocamldep -modules port/parser.mli > port/parser.mli.depends
 # Target: port/parser.cmi, tags: { annot, bin_annot, byte, compile, debug, extension:mli, file:port/parser.mli, interf, ocaml, quiet, traverse, use_menhir, use_parser }
-/home/celery/.opam/system/bin/ocamlfind ocamlc -c -g -annot -bin-annot -I port -I port -o port/parser.cmi port/parser.mli # cached
+/home/celery/.opam/system/bin/ocamlfind ocamlc -c -g -annot -bin-annot -I port -I port -o port/parser.cmi port/parser.mli
 # Target: port/parser.ml.depends, tags: { annot, bin_annot, debug, extension:ml, file:port/parser.ml, ocaml, ocamldep, quiet, traverse, use_menhir, use_parser }
-/home/celery/.opam/system/bin/ocamlfind ocamldep -modules port/parser.ml > port/parser.ml.depends # cached
+/home/celery/.opam/system/bin/ocamlfind ocamldep -modules port/parser.ml > port/parser.ml.depends
 # Target: port/parser.cmo, tags: { annot, bin_annot, byte, compile, debug, extension:cmo, extension:ml, file:port/parser.cmo, file:port/parser.ml, implem, ocaml, quiet, traverse, use_menhir, use_parser }
-/home/celery/.opam/system/bin/ocamlfind ocamlc -c -g -annot -bin-annot -I port -I port -o port/parser.cmo port/parser.ml # cached
+/home/celery/.opam/system/bin/ocamlfind ocamlc -c -g -annot -bin-annot -I port -I port -o port/parser.cmo port/parser.ml
 # Target: port/parser.cma, tags: { annot, bin_annot, byte, debug, extension:cma, file:port/parser.cma, library, link, ocaml, quiet, traverse, use_menhir }
-/home/celery/.opam/system/bin/ocamlfind ocamlc -a port/rast.cmo port/parser.cmo -o port/parser.cma # cached
+/home/celery/.opam/system/bin/ocamlfind ocamlc -a port/rast.cmo port/parser.cmo -o port/parser.cma
 # Target: port/rast.cmx, tags: { annot, bin_annot, compile, debug, extension:cmx, extension:ml, file:port/rast.cmx, file:port/rast.ml, implem, native, ocaml, quiet, traverse, use_menhir, use_parser }
-/home/celery/.opam/system/bin/ocamlfind ocamlopt -c -g -annot -bin-annot -I port -I port -o port/rast.cmx port/rast.ml # cached
+/home/celery/.opam/system/bin/ocamlfind ocamlopt -c -g -annot -bin-annot -I port -I port -o port/rast.cmx port/rast.ml
 # Target: port/parser.cmx, tags: { annot, bin_annot, compile, debug, extension:cmx, extension:ml, file:port/parser.cmx, file:port/parser.ml, implem, native, ocaml, quiet, traverse, use_menhir, use_parser }
-/home/celery/.opam/system/bin/ocamlfind ocamlopt -c -g -annot -bin-annot -I port -I port -o port/parser.cmx port/parser.ml # cached
+/home/celery/.opam/system/bin/ocamlfind ocamlopt -c -g -annot -bin-annot -I port -I port -o port/parser.cmx port/parser.ml
 # Target: port/parser.cmxa, tags: { annot, bin_annot, debug, extension:cmxa, file:port/parser.cmxa, library, link, native, ocaml, quiet, traverse, use_menhir }
-/home/celery/.opam/system/bin/ocamlfind ocamlopt -a port/rast.cmx port/parser.cmx -o port/parser.cmxa # cached
+/home/celery/.opam/system/bin/ocamlfind ocamlopt -a port/rast.cmx port/parser.cmx -o port/parser.cmxa
 # Target: port/parser.cmxs, tags: { annot, bin_annot, debug, extension:cmxs, file:port/parser.cmxs, library, link, native, ocaml, quiet, shared, traverse, use_menhir, use_parser }
 /home/celery/.opam/system/bin/ocamlfind ocamlopt -shared port/parser.cmxa port/rast.cmx port/parser.cmx -o port/parser.cmxs
 # Target: port/absyn_generator.ml.depends, tags: { annot, bin_annot, debug, extension:ml, file:port/absyn_generator.ml, ocaml, ocamldep, quiet, traverse, use_menhir, use_parser }
-/home/celery/.opam/system/bin/ocamlfind ocamldep -modules port/absyn_generator.ml > port/absyn_generator.ml.depends # cached
+/home/celery/.opam/system/bin/ocamlfind ocamldep -modules port/absyn_generator.ml > port/absyn_generator.ml.depends
 # Target: port/lexer.mll, tags: { annot, bin_annot, debug, extension:mll, file:port/lexer.mll, lexer, ocaml, ocamllex, quiet, traverse, use_menhir }
-/usr/bin/ocamllex -q port/lexer.mll # cached
+/usr/bin/ocamllex -q port/lexer.mll
 # Target: port/lexer.ml.depends, tags: { annot, bin_annot, debug, extension:ml, file:port/lexer.ml, ocaml, ocamldep, quiet, traverse, use_menhir, use_parser }
-/home/celery/.opam/system/bin/ocamlfind ocamldep -modules port/lexer.ml > port/lexer.ml.depends # cached
+/home/celery/.opam/system/bin/ocamlfind ocamldep -modules port/lexer.ml > port/lexer.ml.depends
 # Target: port/lexer.cmo, tags: { annot, bin_annot, byte, compile, debug, extension:cmo, extension:ml, file:port/lexer.cmo, file:port/lexer.ml, implem, ocaml, quiet, traverse, use_menhir, use_parser }
-/home/celery/.opam/system/bin/ocamlfind ocamlc -c -g -annot -bin-annot -I port -I port -o port/lexer.cmo port/lexer.ml # cached
+/home/celery/.opam/system/bin/ocamlfind ocamlc -c -g -annot -bin-annot -I port -I port -o port/lexer.cmo port/lexer.ml
 # Target: port/absyn_generator.cmo, tags: { annot, bin_annot, byte, compile, debug, extension:cmo, extension:ml, file:port/absyn_generator.cmo, file:port/absyn_generator.ml, implem, ocaml, quiet, traverse, use_menhir, use_parser }
-/home/celery/.opam/system/bin/ocamlfind ocamlc -c -g -annot -bin-annot -I port -I port -o port/absyn_generator.cmo port/absyn_generator.ml # cached
+/home/celery/.opam/system/bin/ocamlfind ocamlc -c -g -annot -bin-annot -I port -I port -o port/absyn_generator.cmo port/absyn_generator.ml
 # Target: port/absyn_generator.byte, tags: { annot, bin_annot, byte, debug, dont_link_with, extension:byte, file:port/absyn_generator.byte, link, ocaml, program, quiet, traverse, use_menhir, use_parser }
-/home/celery/.opam/system/bin/ocamlfind ocamlc -g -linkpkg port/parser.cma port/lexer.cmo port/absyn_generator.cmo -o port/absyn_generator.byte # cached
+/home/celery/.opam/system/bin/ocamlfind ocamlc -g -linkpkg port/parser.cma port/lexer.cmo port/absyn_generator.cmo -o port/absyn_generator.byte
 # Compilation successful.

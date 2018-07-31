@@ -151,8 +151,10 @@ type 'a program = ('a expr) list
 
 let string_of_ident : 'a ident -> string =
   fun id -> match id.pkg with
-    | None -> "" ^ id.name
-    | Some pkg -> pkg ^ "::" ^ id.name
+    | None ->
+      "RIdent {rid_pkg = Nothing, rid_name = \"" ^ id.name ^ "\", rid_src = Nothing, rid_annot = Nothing}"
+    | Some pkg -> 
+      "RIdent {rid_pkg = Just \"" ^ pkg ^ "\", rid_name = \"" ^ id.name ^ "\", rid_src = Nothing, rid_annot = Nothing}"
 
 (*
 let string_of_numeric : numeric -> string =
@@ -166,44 +168,71 @@ let string_of_numeric : numeric -> string =
 
 let string_of_unop : unop -> string =
   function
-    | UMinus -> "-"
-    | UPlus  -> "+"
-    | Not    -> "!"
-    | UForm  -> "~"
-    | UHelp  -> "?"
+    | UMinus -> "RUMinus"
+    | UPlus  -> "RUPlus"
+    | Not    -> "RUNot"
+    | UForm  -> "RUForm"
+    | UHelp  -> "RUHelp"
 
 
 let string_of_binop : binop -> string =
   function
-    | Plus          -> "+"
-    | Minus         -> "-"
-    | Mult          -> "*"
-    | Div           -> "/"
-    | Pow           -> "^"
-    | Mod           -> "%%"
-    | IntDiv        -> "%/%"
-    | MatrixMult    -> "%*%"
-    | OuterProd     -> "%*%"
-    | KronProd      -> "%x"
-    | Match         -> "%in%"
-    | Gt            -> ">"
-    | Ge            -> ">="
-    | Lt            -> "<"
-    | Le            -> "<="
-    | Eq            -> "=="
-    | Neq           -> "!="
-    | And           -> "&&"
-    | AndVec        -> "&"
-    | Or            -> "||"
-    | OrVec         -> "|"
-    | Form          -> "~"
-    | Assign        -> "<-"
-    | SuperAssign   -> "<<-"
-    | ObjAttr       -> "@"
-    | Range         -> ":"
-    | Help          -> "?"
-    | GetPackage    -> "::"
-    | GetPackageInt -> ":::"
+    | Plus          -> "RPlus"
+    | Minus         -> "RMins"
+    | Mult          -> "RMult"
+    | Div           -> "RDiv"
+    | Pow           -> "RPow"
+    | Mod           -> "RMod"
+    | IntDiv        -> "RIntDiv"
+    | MatrixMult    -> "RMatrixMult"
+    | OuterProd     -> "ROuterProd"
+    | KronProd      -> "RKronProd"
+    | Match         -> "RMatch"
+    | Gt            -> "RGt"
+    | Ge            -> "RGe"
+    | Lt            -> "RLt"
+    | Le            -> "RLe"
+    | Eq            -> "REq"
+    | Neq           -> "RNeq"
+    | And           -> "RAnd"
+    | AndVec        -> "RAndVec"
+    | Or            -> "ROr"
+    | OrVec         -> "ROrVec"
+    | Form          -> "RForm"
+    | Assign        -> "RAssign"
+    | SuperAssign   -> "RSuperAssign"
+    | ObjAttr       -> "RObjAttr"
+    | Range         -> "RRange"
+    | Help          -> "RHelp"
+    | GetPackage    -> "RGetPackage"
+    | GetPackageInt -> "RGetPackageInt"
+
+let string_of_rnumeric =
+  function
+    | NumInt i -> "RNumInt " ^ string_of_int i
+    | NumNaInt -> "RNumNaInt"
+    | NumFloat f -> "RNumFloat " ^ string_of_float f
+    | NumNaFloat -> "RNumNaFloat"
+    | NumComplex (r, i) -> "RNumComplex (" ^ string_of_float r ^ " :+ " ^ string_of_float i ^ ")"
+    | NumNaComplex -> "RNumNaComplex"
+
+let string_of_rbool =
+  function
+    | RBool true -> "RBool True"
+    | RBool false -> "RBool False"
+    | RNaBool -> "RNaBool"
+
+let string_of_rstring =
+  function
+    | RString s -> "RString \"" ^ s ^ "\""
+    | RNaString -> "RNaString"
+
+let string_of_rconst =
+  function
+    | NumConst n -> "RNumConst (" ^ string_of_rnumeric n ^ ")"
+    | StrConst s -> "RStrConst (" ^ string_of_rstring s ^ ")"
+    | BoolConst b -> "RBoolConst (" ^ string_of_rbool b ^ ")"
+    | NaConst -> "RNaConst"
 
 
 let rec string_of_expr : 'a expr -> string =
@@ -214,75 +243,80 @@ let rec string_of_expr : 'a expr -> string =
     | StringConst s  -> "StringConst " ^ s
     | BoolConst l    -> "BoolConst " ^ (string_of_bool l)
     *)
-    | Null           -> "Null"
-    (* Identifiers *)
-    | Ident i -> string_of_ident i
+    | Const c -> "RConst (" ^ string_of_rconst c ^ ")"
+    | Ident i -> "RVar (" ^ string_of_ident i ^ ")"
+    | Null           -> "RNull"
+
     (* Operators *)
     | Uop (u, e) ->
-        "Uop(" ^ (string_of_unop u) ^ "," ^ (string_of_expr e) ^ ")"
+        "RUnOp (" ^ string_of_unop u ^ ") (" ^ string_of_expr e ^ ")"
+
     | Bop (b, e1, e2) ->
-        "Bop(" ^ (string_of_binop b) ^ "," ^
-                 (string_of_expr e1) ^ "," ^ (string_of_expr e2) ^ ")"
+        "RBinOp (" ^ string_of_binop b ^ ") (" ^
+                 string_of_expr e1 ^ ") (" ^ string_of_expr e2 ^ ")"
     (* Functions *)
     | FuncCall (e, args) ->
-        "FuncCall(" ^
-         (string_of_expr e) ^ ", [" ^
-         (String.concat "," (List.map string_of_arg args)) ^ "])"
+        "RFuncCall (" ^
+         string_of_expr e ^ ") [" ^
+         (String.concat "," (List.map string_of_arg args)) ^ "]"
     | FuncDec (ps, e) ->
-        "FuncDec([" ^
-          (String.concat "," (List.map string_of_param ps)) ^ "]," ^
-          (string_of_expr e) ^ ")"
+        "RFuncDec [" ^
+          (String.concat "," (List.map string_of_param ps)) ^ "] (" ^
+          string_of_expr e ^ ")"
 
     (* Block of expressions *)
     | Block (es) ->
-        "Block([" ^ (String.concat "," (List.map string_of_expr es)) ^ "])"
+        "RSeq [" ^ (String.concat "," (List.map string_of_expr es)) ^ "]"
     (* Control expressions *)
     | If (c, et) ->
-        "If(" ^ (string_of_expr c) ^ "," ^ (string_of_expr et) ^ ")"
+        "RIf (" ^ string_of_expr c ^ ") (" ^ string_of_expr et ^ ")"
     | IfElse (c, et, ef) ->
-        "IfElse(" ^ (string_of_expr c) ^ "," ^
-                    (string_of_expr et) ^ "," ^ (string_of_expr ef) ^ ")"
+        "RIfElse (" ^ string_of_expr c ^ ") (" ^
+                    string_of_expr et ^ ") (" ^ string_of_expr ef ^ ")"
     | For ((i, e2), e3) ->
-        "For(" ^ (string_of_ident i) ^ "," ^ (string_of_expr e2) ^ "," ^
-                 (string_of_expr e3) ^ ")"
+        "RFor (" ^ string_of_ident i ^ ") (" ^ string_of_expr e2 ^ ") (" ^
+                 string_of_expr e3 ^ ")"
     | While (e1, e2) ->
-        "While(" ^ (string_of_expr e1) ^ "," ^ (string_of_expr e2) ^ ")"
-    | Repeat (e) -> "Repeat(" ^ (string_of_expr e) ^ ")"
-    | Next -> "Next"
-    | Break -> "Break"
+        "RWhile (" ^ string_of_expr e1 ^ ") (" ^ string_of_expr e2 ^ ")"
+    | Repeat (e) -> "RRepeat (" ^ string_of_expr e ^ ")"
+    | Next -> "RNext"
+    | Break -> "RBreak"
     (* List acessing *)
     | ListProj (e, args) ->
-        "ListProj(" ^
-          (string_of_expr e) ^ ",[" ^
-          (String.concat "," (List.map string_of_arg args)) ^ "])"
+        "RVecProj (" ^
+          string_of_expr e ^ ") [" ^
+          (String.concat "," (List.map string_of_arg args)) ^ "]"
     | ListSub (e, args) ->
-        "ListSub(" ^
-          (string_of_expr e) ^ ",[" ^
-          (String.concat "," (List.map string_of_arg args)) ^ "])"
+        "RVecSub (" ^
+          string_of_expr e ^ ") [" ^
+          (String.concat "," (List.map string_of_arg args)) ^ "]"
 
 
 and string_of_arg : 'a arg -> string =
   function
-    | EmptyArg            -> "Empty_Arg"
-    | ExprArg e           -> string_of_expr e
-    | IdentAssignEmpty i  -> (string_of_ident i) ^ "="
-    | IdentAssign (i, e)  -> (string_of_ident i) ^ "=" ^ (string_of_expr e)
-    | StringAssignEmpty s -> s ^ "="
-    | StringAssign (s, e) -> s ^ "=" ^ (string_of_expr e)
-    | NullAssignEmpty     -> "Null="
-    | NullAssign e        -> "Null=" ^ (string_of_expr e)
-    | ArgDots             -> "..."
+    | EmptyArg            -> "REmptyArg"
+    | ExprArg e           -> "RExprArg (" ^ string_of_expr e ^ ")"
+    | IdentAssign (i, e)  -> "RIdentAssign (" ^ string_of_ident i ^ ") (" ^
+                              string_of_expr e ^ ")"
+    | IdentAssignEmpty i  -> "RIdentAssignEmpty (" ^ string_of_ident i ^ ")"
+    | StringAssign (s, e) -> "RStringAssign (RString \"" ^ s ^ "\") (" ^
+                                string_of_expr e ^ ")"
+    | StringAssignEmpty s -> "RStringAssign (RString \"" ^ s ^ "\")"
+    | NullAssign e        -> "RNullAssign (" ^ string_of_expr e ^ ")"
+    | NullAssignEmpty     -> "RNullAssignEmpty"
+    | ArgDots             -> "RVarArg"
 
 
 and string_of_param : 'a param -> string =
   function
-    | Param i             -> string_of_ident i
-    | DefaultParam (i, e) -> (string_of_ident i) ^ "=" ^ (string_of_expr e)
-    | ParamDots           -> "..."
+    | Param i             -> "RParam (" ^ string_of_ident i ^ ")"
+    | DefaultParam (i, e) -> "RDefault (" ^ string_of_ident i ^ ") (" ^
+                                            string_of_expr e ^ ")"
+    | ParamDots           -> "RVarParam"
 
 
 let string_of_program : 'a program -> string =
   fun es ->
-    "[" ^ (String.concat "," (List.map string_of_expr es)) ^ "]"
+    "RProgram [" ^ (String.concat "," (List.map string_of_expr es)) ^ "]"
 
 

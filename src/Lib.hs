@@ -5,6 +5,10 @@ module Lib
 import SimpleR.Language
 import SimpleR.Interpreter
 import SimpleR.Smt
+import SimpleR.R
 
 someFunc :: IO ()
-someFunc = putStrLn "someFunc"
+someFunc = do
+  putStrLn "someFunc"
+  return ()
+
