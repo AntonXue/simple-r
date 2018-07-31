@@ -2,36 +2,13 @@ module SimpleR.Language.Syntax where
 
 import qualified Data.Complex as C
 
-data SInt =
-    SInt Int
-  | SNaInt
-  deriving (Ord, Eq, Show, Read)
-
-data SDouble =
-    SDouble Double
-  | SNaDouble
-  deriving (Ord, Eq, Show, Read)
-
-data SComplex =
-    SComplex (C.Complex Double)
-  | SNaComplex
-  deriving (Eq, Show, Read)
-
-data SBool =
-    SBool Int
-  | SNaBool
-  deriving (Ord, Eq, Show, Read)
-
-data SString =
-    SString String
-  | SNaString
-  deriving (Ord, Eq, Show, Read)
+type Complex = C.Complex Double
 
 data SIdentAnnot = SIdentAnnot deriving (Ord, Eq, Show, Read)
 
 data SIdent = SIdent
-  { sid_pkg :: Maybe SString
-  , sid_name :: SString
+  { sid_pkg :: Maybe String
+  , sid_name :: String
   , sid_annot :: SIdentAnnot
   } deriving (Ord, Eq, Show, Read)
 
@@ -46,12 +23,13 @@ data SMemRef = SMemRef
   } deriving (Ord, Eq, Show, Read)
 
 data SConst =
-    SIntConst SInt
-  | SDoubleCont SDouble
-  | SComplexConst SComplex
-  | SBoolConst SBool
-  | SStringConst SString
+    SIntConst Int
+  | SDoubleConst Double
+  | SComplexConst (Complex)
+  | SBoolConst Bool
+  | SStringConst String
   | SNilConst
+  | SNaConst
   deriving (Eq, Show, Read)
 
 data SParam =
@@ -84,16 +62,5 @@ data SExpr =
   | SError
   | STix STick SExpr
   deriving (Eq, Show, Read)
-
-
--- Some type classes
-
--- Numeric
-
-class SNumeric a
-instance SNumeric SInt
-instance SNumeric SDouble
-instance SNumeric SComplex
-instance SNumeric SBool
 
 

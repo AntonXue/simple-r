@@ -20,7 +20,6 @@ data Heap = Heap
 
 data HeapObj =
     PromiseObj SMemRef SExpr
-  | PureObj SMemRef SExpr
   | DataObj Value Attributes
   deriving (Eq, Show, Read)
 
@@ -32,24 +31,21 @@ data Value =
   deriving (Eq, Show, Read)
 
 data Vector =
-    IntVec [SInt]
-  | DoubleVec [SDouble]
-  | ComplexVec [SComplex]
-  | BoolVec [SBool]
-  | StringVec [SString]
-  | SymVec SymVector
-  deriving (Eq, Show, Read)
-
-data SymVector =
-    SymVector SmtIdent Type PathCons [SymVector]
+    IntVec [Int]
+  | DoubleVec [Double]
+  | ComplexVec [Complex]
+  | BoolVec [Bool]
+  | StringVec [String]
+  | NilVec
+  | SymVec SmtIdent Type Constraint
   deriving (Eq, Show, Read)
 
 data Attributes = Attributes
-  { attrs_map :: M.Map SString SMemRef
+  { attrs_map :: M.Map String SMemRef
   } deriving (Eq, Show, Read)
 
-data PathCons = PathCons
-  { path_list :: [SmtExpr]
+data Constraint = Constraint
+  { const_list :: [SmtExpr]
   } deriving (Eq, Show, Read)
 
 data Stack = Stack
@@ -78,7 +74,7 @@ data Slot =
   | AttrSlot (Maybe SMemRef) (Maybe SExpr)
   deriving (Eq, Show, Read)
 
-data SymSMems = SymSMems
+data SymMems = SymMems
   { smems_list :: [SMemRef]
   } deriving (Eq, Show, Read)
 
@@ -87,7 +83,7 @@ data State = State
   , st_heap :: Heap
   , st_base_env_mem :: SMemRef
   , st_glbl_env_mem :: SMemRef
-  , st_sym_mems :: SymSMems
+  , st_sym_mems :: SymMems
   , st_fresh_count :: Int
   , st_pred_unique :: Int
   , st_unique :: Int
