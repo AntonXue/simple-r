@@ -17,12 +17,13 @@ let default_ident =
   ; src  = None
   ; tag  = None }
 
-
+(*
 type numeric =
     Int of int
   | Float of float
   | Complex of float * float
   | Na
+*)
 
 
 type unop =
@@ -72,10 +73,27 @@ type binop =
   (* Help?? *)
   | Help
 
-
 type rnumeric =
     NumInt of int
+  | NumNaInt
   | NumFloat of float
+  | NumNaFloat
+  | NumComplex of float * float
+  | NumNaComplex
+
+type rbool =
+    RBool of bool
+  | RNaBool
+
+type rstring =
+    RString of string
+  | RNaString
+
+type rconst =
+    NumConst of rnumeric
+  | StrConst of rstring
+  | BoolConst of rbool
+  | NaConst
 
 type 'a arg =
   (* Expression *)
@@ -100,9 +118,7 @@ and 'a param =
 
 and 'a expr =
   (* Constants *)
-  | NumericConst of numeric
-  | StringConst of string
-  | BoolConst of bool
+  | Const of rconst
   | Null
   (* Identifiers *)
   | Ident of 'a ident
@@ -138,6 +154,7 @@ let string_of_ident : 'a ident -> string =
     | None -> "" ^ id.name
     | Some pkg -> pkg ^ "::" ^ id.name
 
+(*
 let string_of_numeric : numeric -> string =
   function
     | Na             -> "NA"
@@ -145,6 +162,7 @@ let string_of_numeric : numeric -> string =
     | Float f        -> "Float " ^ (string_of_float f)
     | Complex (r, i) -> "Complex (" ^ (string_of_float r) ^ ", " ^
                                       (string_of_float i) ^ ")"
+*)
 
 let string_of_unop : unop -> string =
   function
@@ -191,9 +209,11 @@ let string_of_binop : binop -> string =
 let rec string_of_expr : 'a expr -> string =
   function
     (* Values *)
+    (*
     | NumericConst i -> "NumericConst " ^ (string_of_numeric i)
     | StringConst s  -> "StringConst " ^ s
     | BoolConst l    -> "BoolConst " ^ (string_of_bool l)
+    *)
     | Null           -> "Null"
     (* Identifiers *)
     | Ident i -> string_of_ident i

@@ -2645,7 +2645,7 @@ and _menhir_run85 : _menhir_env -> 'ttv_tail * _menhir_state * (unit A.expr) -> 
         let _3 = _v in
         let (_menhir_stack, _menhir_s, _1) = _menhir_stack in
         let _2 = () in
-        let _v : (unit A.expr) =                              ( A.ListProj (_1, [A.ExprArg (A.StringConst _3)]) ) in
+        let _v : (unit A.expr) =                              ( A.ListProj (_1, [A.ExprArg (A.Const (A.StrConst (A.RString _3)))]) ) in
         _menhir_goto_expr _menhir_env _menhir_stack _menhir_s _v
     | SYMBOL _v ->
         let _menhir_stack = Obj.magic _menhir_stack in
@@ -2855,7 +2855,7 @@ and _menhir_run92 : _menhir_env -> 'ttv_tail * _menhir_state * (unit A.expr) -> 
         let _3 = _v in
         let (_menhir_stack, _menhir_s, _1) = _menhir_stack in
         let _2 = () in
-        let _v : (unit A.expr) =                              ( A.Bop (A.ObjAttr, _1, (A.StringConst _3)) ) in
+        let _v : (unit A.expr) =                              ( A.Bop (A.ObjAttr, _1, (A.Const (A.StrConst (A.RString _3)))) ) in
         _menhir_goto_expr _menhir_env _menhir_stack _menhir_s _v
     | SYMBOL _v ->
         let _menhir_stack = Obj.magic _menhir_stack in
@@ -2891,7 +2891,7 @@ and _menhir_run6 : _menhir_env -> 'ttv_tail * _menhir_state * (string) -> 'ttv_r
         let _3 = _v in
         let (_menhir_stack, _menhir_s, _1) = _menhir_stack in
         let _2 = () in
-        let _v : (unit A.expr) =                                          ( A.Bop (A.GetPackageInt, (A.Ident {A.default_ident with name=_1}), (A.StringConst _3)) ) in
+        let _v : (unit A.expr) =                                          ( A.Bop (A.GetPackageInt, (A.Ident {A.default_ident with name=_1}), A.Const (A.StrConst (A.RString _3))) ) in
         _menhir_goto_expr _menhir_env _menhir_stack _menhir_s _v
     | SYMBOL _v ->
         let _menhir_stack = Obj.magic _menhir_stack in
@@ -2921,7 +2921,7 @@ and _menhir_run9 : _menhir_env -> 'ttv_tail * _menhir_state * (string) -> 'ttv_r
         let _3 = _v in
         let (_menhir_stack, _menhir_s, _1) = _menhir_stack in
         let _2 = () in
-        let _v : (unit A.expr) =                                          ( A.Bop (A.GetPackage, (A.Ident {A.default_ident with name=_1}), (A.StringConst _3)) ) in
+        let _v : (unit A.expr) =                                          ( A.Bop (A.GetPackage, (A.Ident {A.default_ident with name=_1}), A.Const (A.StrConst (A.RString _3))) ) in
         _menhir_goto_expr _menhir_env _menhir_stack _menhir_s _v
     | SYMBOL _v ->
         let _menhir_stack = Obj.magic _menhir_stack in
@@ -2942,7 +2942,7 @@ and _menhir_run9 : _menhir_env -> 'ttv_tail * _menhir_state * (string) -> 'ttv_r
 and _menhir_reduce11 : _menhir_env -> 'ttv_tail * _menhir_state * (string) -> 'ttv_return =
   fun _menhir_env _menhir_stack ->
     let (_menhir_stack, _menhir_s, _1) = _menhir_stack in
-    let _v : (unit A.expr) =                   ( A.StringConst _1 ) in
+    let _v : (unit A.expr) =                   ( A.Const (A.StrConst (A.RString _1)) ) in
     _menhir_goto_expr _menhir_env _menhir_stack _menhir_s _v
 
 and _menhir_run13 : _menhir_env -> 'ttv_tail * _menhir_state * (string) -> 'ttv_return =
@@ -2957,7 +2957,7 @@ and _menhir_run13 : _menhir_env -> 'ttv_tail * _menhir_state * (string) -> 'ttv_
         let _3 = _v in
         let (_menhir_stack, _menhir_s, _1) = _menhir_stack in
         let _2 = () in
-        let _v : (unit A.expr) =                                          ( A.Bop (A.GetPackageInt, (A.StringConst _1), (A.StringConst _3)) ) in
+        let _v : (unit A.expr) =                                          ( A.Bop (A.GetPackageInt, (A.Const (A.StrConst (A.RString _1))), (A.Const (A.StrConst (A.RString _3)))) ) in
         _menhir_goto_expr _menhir_env _menhir_stack _menhir_s _v
     | SYMBOL _v ->
         let _menhir_stack = Obj.magic _menhir_stack in
@@ -2966,7 +2966,7 @@ and _menhir_run13 : _menhir_env -> 'ttv_tail * _menhir_state * (string) -> 'ttv_
         let _3 = _v in
         let (_menhir_stack, _menhir_s, _1) = _menhir_stack in
         let _2 = () in
-        let _v : (unit A.expr) =                                          ( A.Bop (A.GetPackageInt, (A.StringConst _1), (A.Ident {A.default_ident with name=_3}))) in
+        let _v : (unit A.expr) =                                          ( A.Bop (A.GetPackageInt, (A.Const (A.StrConst (A.RString _1))), (A.Ident {A.default_ident with name=_3}))) in
         _menhir_goto_expr _menhir_env _menhir_stack _menhir_s _v
     | _ ->
         assert (not _menhir_env._menhir_error);
@@ -2987,7 +2987,7 @@ and _menhir_run16 : _menhir_env -> 'ttv_tail * _menhir_state * (string) -> 'ttv_
         let _3 = _v in
         let (_menhir_stack, _menhir_s, _1) = _menhir_stack in
         let _2 = () in
-        let _v : (unit A.expr) =                                          ( A.Bop (A.GetPackage, (A.StringConst _1), (A.StringConst _3)) ) in
+        let _v : (unit A.expr) =                                          ( A.Bop (A.GetPackage, A.Const (A.StrConst (A.RString _1)), A.Const (A.StrConst (A.RString _3))) ) in
         _menhir_goto_expr _menhir_env _menhir_stack _menhir_s _v
     | SYMBOL _v ->
         let _menhir_stack = Obj.magic _menhir_stack in
@@ -2996,7 +2996,7 @@ and _menhir_run16 : _menhir_env -> 'ttv_tail * _menhir_state * (string) -> 'ttv_
         let _3 = _v in
         let (_menhir_stack, _menhir_s, _1) = _menhir_stack in
         let _2 = () in
-        let _v : (unit A.expr) =                                          ( A.Bop (A.GetPackage, (A.StringConst _1), (A.Ident {A.default_ident with name=_3})) ) in
+        let _v : (unit A.expr) =                                          ( A.Bop (A.GetPackage, A.Const (A.StrConst (A.RString _1)), (A.Ident {A.default_ident with name=_3})) ) in
         _menhir_goto_expr _menhir_env _menhir_stack _menhir_s _v
     | _ ->
         assert (not _menhir_env._menhir_error);
@@ -6494,7 +6494,7 @@ and _menhir_run3 : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return =
     let _menhir_env = _menhir_discard _menhir_env in
     let _menhir_stack = Obj.magic _menhir_stack in
     let _1 = () in
-    let _v : (unit A.expr) =                   ( A.BoolConst true ) in
+    let _v : (unit A.expr) =                   ( A.Const (A.BoolConst (A.RBool true)) ) in
     _menhir_goto_expr _menhir_env _menhir_stack _menhir_s _v
 
 and _menhir_run4 : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return =
@@ -6863,7 +6863,7 @@ and _menhir_run24 : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return =
     let _menhir_env = _menhir_discard _menhir_env in
     let _menhir_stack = Obj.magic _menhir_stack in
     let _1 = () in
-    let _v : (unit A.expr) =                   ( A.NumericConst (A.Float nan) ) in
+    let _v : (unit A.expr) =                   ( A.Const (A.NumConst (A.NumFloat nan)) ) in
     _menhir_goto_expr _menhir_env _menhir_stack _menhir_s _v
 
 and _menhir_run25 : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return =
@@ -6871,7 +6871,7 @@ and _menhir_run25 : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return =
     let _menhir_env = _menhir_discard _menhir_env in
     let _menhir_stack = Obj.magic _menhir_stack in
     let _1 = () in
-    let _v : (unit A.expr) =                   ( A.NumericConst (A.Na) ) in
+    let _v : (unit A.expr) =                   ( A.Const (A.NaConst) ) in
     _menhir_goto_expr _menhir_env _menhir_stack _menhir_s _v
 
 and _menhir_run26 : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return =
@@ -7067,7 +7067,7 @@ and _menhir_run29 : _menhir_env -> 'ttv_tail -> _menhir_state -> (int) -> 'ttv_r
     let _menhir_env = _menhir_discard _menhir_env in
     let _menhir_stack = Obj.magic _menhir_stack in
     let _1 = _v in
-    let _v : (unit A.expr) =                   ( A.NumericConst (A.Int _1) ) in
+    let _v : (unit A.expr) =                   ( A.Const (A.NumConst (A.NumInt _1)) ) in
     _menhir_goto_expr _menhir_env _menhir_stack _menhir_s _v
 
 and _menhir_run30 : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return =
@@ -7075,7 +7075,7 @@ and _menhir_run30 : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return =
     let _menhir_env = _menhir_discard _menhir_env in
     let _menhir_stack = Obj.magic _menhir_stack in
     let _1 = () in
-    let _v : (unit A.expr) =                   ( A.NumericConst (A.Float infinity) ) in
+    let _v : (unit A.expr) =                   ( A.Const (A.NumConst (A.NumFloat infinity)) ) in
     _menhir_goto_expr _menhir_env _menhir_stack _menhir_s _v
 
 and _menhir_run31 : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return =
@@ -7294,7 +7294,7 @@ and _menhir_run41 : _menhir_env -> 'ttv_tail -> _menhir_state -> (float) -> 'ttv
     let _menhir_env = _menhir_discard _menhir_env in
     let _menhir_stack = Obj.magic _menhir_stack in
     let _1 = _v in
-    let _v : (unit A.expr) =                   ( A.NumericConst (A.Float _1) ) in
+    let _v : (unit A.expr) =                   ( A.Const (A.NumConst (A.NumFloat _1)) ) in
     _menhir_goto_expr _menhir_env _menhir_stack _menhir_s _v
 
 and _menhir_run42 : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return =
@@ -7302,7 +7302,7 @@ and _menhir_run42 : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return =
     let _menhir_env = _menhir_discard _menhir_env in
     let _menhir_stack = Obj.magic _menhir_stack in
     let _1 = () in
-    let _v : (unit A.expr) =                   ( A.BoolConst false ) in
+    let _v : (unit A.expr) =                   ( A.Const (A.BoolConst (A.RBool false)) ) in
     _menhir_goto_expr _menhir_env _menhir_stack _menhir_s _v
 
 and _menhir_run171 : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return =
@@ -7317,7 +7317,7 @@ and _menhir_run43 : _menhir_env -> 'ttv_tail -> _menhir_state -> (float) -> 'ttv
     let _menhir_env = _menhir_discard _menhir_env in
     let _menhir_stack = Obj.magic _menhir_stack in
     let _1 = _v in
-    let _v : (unit A.expr) =                   ( A.NumericConst (A.Complex (0.0, _1)) ) in
+    let _v : (unit A.expr) =                   ( A.Const (A.NumConst (A.NumComplex (0.0, _1))) ) in
     _menhir_goto_expr _menhir_env _menhir_stack _menhir_s _v
 
 and _menhir_run44 : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return =

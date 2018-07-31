@@ -92,15 +92,15 @@ equal_assign:
 
 expr:
   (* Constants *)
-    INT_CONST     { A.NumericConst (A.Int $1) }
-  | FLOAT_CONST   { A.NumericConst (A.Float $1) }
-  | NAN           { A.NumericConst (A.Float nan) }
-  | INFINITY      { A.NumericConst (A.Float infinity) }
-  | COMPLEX_CONST { A.NumericConst (A.Complex (0.0, $1)) }
-  | NA            { A.NumericConst (A.Na) }
-  | TRUE          { A.BoolConst true }
-  | FALSE         { A.BoolConst false }
-  | STRING_CONST  { A.StringConst $1 }
+    INT_CONST     { A.Const (A.NumConst (A.NumInt $1)) }
+  | FLOAT_CONST   { A.Const (A.NumConst (A.NumFloat $1)) }
+  | NAN           { A.Const (A.NumConst (A.NumFloat nan)) }
+  | INFINITY      { A.Const (A.NumConst (A.NumFloat infinity)) }
+  | COMPLEX_CONST { A.Const (A.NumConst (A.NumComplex (0.0, $1))) }
+  | NA            { A.Const (A.NaConst) }
+  | TRUE          { A.Const (A.BoolConst (A.RBool true)) }
+  | FALSE         { A.Const (A.BoolConst (A.RBool false)) }
+  | STRING_CONST  { A.Const (A.StrConst (A.RString $1)) }
   | NULL          { A.Null }
 
   (* Identifier *)
@@ -182,19 +182,19 @@ expr:
 
   (* Package lookup *)
   | SYMBOL NS_GET SYMBOL                 { A.Bop (A.GetPackage, (A.Ident {A.default_ident with name=$1}), (A.Ident {A.default_ident with name=$3})) }
-  | SYMBOL NS_GET STRING_CONST           { A.Bop (A.GetPackage, (A.Ident {A.default_ident with name=$1}), (A.StringConst $3)) }
-  | STRING_CONST NS_GET SYMBOL           { A.Bop (A.GetPackage, (A.StringConst $1), (A.Ident {A.default_ident with name=$3})) }
-  | STRING_CONST NS_GET STRING_CONST     { A.Bop (A.GetPackage, (A.StringConst $1), (A.StringConst $3)) } 
+  | SYMBOL NS_GET STRING_CONST           { A.Bop (A.GetPackage, (A.Ident {A.default_ident with name=$1}), A.Const (A.StrConst (A.RString $3))) }
+  | STRING_CONST NS_GET SYMBOL           { A.Bop (A.GetPackage, A.Const (A.StrConst (A.RString $1)), (A.Ident {A.default_ident with name=$3})) }
+  | STRING_CONST NS_GET STRING_CONST     { A.Bop (A.GetPackage, A.Const (A.StrConst (A.RString $1)), A.Const (A.StrConst (A.RString $3))) } 
   | SYMBOL NS_GET_INT SYMBOL             { A.Bop (A.GetPackageInt, (A.Ident {A.default_ident with name=$1}), (A.Ident {A.default_ident with name=$3})) }
-  | SYMBOL NS_GET_INT STRING_CONST       { A.Bop (A.GetPackageInt, (A.Ident {A.default_ident with name=$1}), (A.StringConst $3)) }
-  | STRING_CONST NS_GET_INT SYMBOL       { A.Bop (A.GetPackageInt, (A.StringConst $1), (A.Ident {A.default_ident with name=$3}))}
-  | STRING_CONST NS_GET_INT STRING_CONST { A.Bop (A.GetPackageInt, (A.StringConst $1), (A.StringConst $3)) }
+  | SYMBOL NS_GET_INT STRING_CONST       { A.Bop (A.GetPackageInt, (A.Ident {A.default_ident with name=$1}), A.Const (A.StrConst (A.RString $3))) }
+  | STRING_CONST NS_GET_INT SYMBOL       { A.Bop (A.GetPackageInt, (A.Const (A.StrConst (A.RString $1))), (A.Ident {A.default_ident with name=$3}))}
+  | STRING_CONST NS_GET_INT STRING_CONST { A.Bop (A.GetPackageInt, (A.Const (A.StrConst (A.RString $1))), (A.Const (A.StrConst (A.RString $3)))) }
 
   (* Property access *)
   | expr DOLLAR SYMBOL       { A.ListProj ($1, [A.ExprArg (A.Ident {A.default_ident with name=$3})]) }
-  | expr DOLLAR STRING_CONST { A.ListProj ($1, [A.ExprArg (A.StringConst $3)]) } 
+  | expr DOLLAR STRING_CONST { A.ListProj ($1, [A.ExprArg (A.Const (A.StrConst (A.RString $3)))]) } 
   | expr AT SYMBOL           { A.Bop (A.ObjAttr, $1, (A.Ident {A.default_ident with name=$3})) } 
-  | expr AT STRING_CONST     { A.Bop (A.ObjAttr, $1, (A.StringConst $3)) } 
+  | expr AT STRING_CONST     { A.Bop (A.ObjAttr, $1, (A.Const (A.StrConst (A.RString $3)))) } 
 
   ;
 

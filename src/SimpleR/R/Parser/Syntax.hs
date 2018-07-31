@@ -20,9 +20,11 @@ data RIdent = RIdent
 
 data RNumeric =
     RNumInt Int
+  | RNumNaInt
   | RNumFloat Float
+  | RNumNaFloat
   | RNumComplex (C.Complex Double)
-  | RNaNumeric
+  | RNumNaComplex
   deriving (Eq, Show, Read)
 
 data RBool =
@@ -80,6 +82,7 @@ data RConst =
     RNumConst RNumeric
   | RStrConst RString
   | RBoolConst RBool
+  | RNaConst
   deriving (Eq, Show, Read)
 
 data RExpr =
