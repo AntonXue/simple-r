@@ -9,24 +9,24 @@ data Type = IntTy | DoubleTy | ComplexTy | BoolTy | StringTy
   deriving (Eq, Show, Read)
 
 data Env = Env
-  { env_map :: M.Map SIdent SMemRef
-  , env_pred_mem :: SMemRef
+  { env_map :: M.Map Ident MemRef
+  , env_pred_mem :: MemRef
   } deriving (Eq, Show, Read)
 
 data Heap = Heap
-  { heap_map :: M.Map SMemRef HeapObj
-  , heap_next_mem :: SMemRef
+  { heap_map :: M.Map MemRef HeapObj
+  , heap_next_mem :: MemRef
   } deriving (Eq, Show, Read)
 
 data HeapObj =
-    PromiseObj SMemRef SExpr
+    PromiseObj MemRef Expr
   | DataObj Value Attributes
   deriving (Eq, Show, Read)
 
 data Value =
     VecVal Vector
-  | RefsVal [SMemRef]
-  | FuncVal SMemRef [SParam] SExpr
+  | RefsVal [MemRef]
+  | FuncVal MemRef [Param] Expr
   | EnvVal Env
   deriving (Eq, Show, Read)
 
@@ -41,7 +41,7 @@ data Vector =
   deriving (Eq, Show, Read)
 
 data Attributes = Attributes
-  { attrs_map :: M.Map String SMemRef
+  { attrs_map :: M.Map String MemRef
   } deriving (Eq, Show, Read)
 
 data Constraint = Constraint
@@ -53,36 +53,41 @@ data Stack = Stack
   } deriving (Eq, Show, Read)
 
 data Frame = Frame
-  { frame_env_mem :: SMemRef
+  { frame_env_mem :: MemRef
   , frame_slot :: Slot
   } deriving (Eq, Show, Read)
 
+data LoopState =
+    LoopCond
+  | LoopBody
+  deriving (Eq, Show, Read)
+
 data Slot =
-    EvalSlot SExpr
-  | ReturnSlot SMemRef
-  | SeqSlot [SExpr]
-  | BranchSlot SExpr SExpr
-  | LoopSlot SExpr SExpr (Maybe SMemRef)
+    EvalSlot Expr
+  | ReturnSlot MemRef
+  | SeqSlot [Expr]
+  | BranchSlot Expr Expr
+  | LoopSlot Expr Expr LoopState
 
-  | AssignSlot SIdent
-  | SupAssignSlot SIdent
-  | LambdaASlot (Maybe SMemRef) [(SArg, SMemRef)] (Maybe SArg) [SArg]
-  | LambdaBSlot SMemRef
+  | AssignSlot Ident
+  | SupAssignSlot Ident
+  | LambdaASlot (Maybe MemRef) [(Arg, MemRef)] (Maybe Arg) [Arg]
+  | LambdaBSlot MemRef
 
-  | UpdateSlot SMemRef
-  | ArgSlot [SArg]
-  | AttrSlot (Maybe SMemRef) (Maybe SExpr)
+  | UpdateSlot MemRef
+  | ArgSlot [Arg]
+  | AttrSlot (Maybe MemRef) (Maybe Expr)
   deriving (Eq, Show, Read)
 
 data SymMems = SymMems
-  { smems_list :: [SMemRef]
+  { smems_list :: [MemRef]
   } deriving (Eq, Show, Read)
 
 data State = State
   { st_stack :: Stack
   , st_heap :: Heap
-  , st_base_env_mem :: SMemRef
-  , st_glbl_env_mem :: SMemRef
+  , st_base_env_mem :: MemRef
+  , st_glbl_env_mem :: MemRef
   , st_sym_mems :: SymMems
   , st_fresh_count :: Int
   , st_pred_unique :: Int

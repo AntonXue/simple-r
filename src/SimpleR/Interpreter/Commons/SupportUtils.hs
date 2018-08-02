@@ -12,98 +12,98 @@ mapDeleteList :: (Ord k) => [k] -> M.Map k v -> M.Map k v
 mapDeleteList ks map = foldl (\m k -> M.delete k m) map ks
 
 -- Memories
-baseMem :: SMemRef
+baseMem :: MemRef
 baseMem = memNull
 
-globalMem :: SMemRef
+globalMem :: MemRef
 globalMem = memNull
 
 -- Identifier
-idVariadic :: SIdent
+idVariadic :: Ident
 idVariadic = idFromString "..."
 
-freshId :: State -> (SIdent, State)
+freshId :: State -> (Ident, State)
 freshId = undefined
 
-freshIdSeeded :: String -> State -> (SIdent, State)
+freshIdSeeded :: String -> State -> (Ident, State)
 freshIdSeeded = undefined
 
 -- Vector conversion
-vecFromSConst :: SConst -> Vector
-vecFromSConst (SIntConst int) = IntVec [int]
-vecFromSConst (SDoubleConst double) = DoubleVec [double]
-vecFromSConst (SComplexConst complex) = ComplexVec [complex]
-vecFromSConst (SBoolConst bool) = BoolVec [bool]
-vecFromSConst (SStringConst str) = StringVec [str]
-vecFromSConst (SNaConst) = NilVec
+vecFromConst :: Const -> Vector
+vecFromConst (IntConst int) = IntVec [int]
+vecFromConst (DoubleConst double) = DoubleVec [double]
+vecFromConst (ComplexConst complex) = ComplexVec [complex]
+vecFromConst (BoolConst bool) = BoolVec [bool]
+vecFromConst (StringConst str) = StringVec [str]
+vecFromConst (NaConst) = NilVec
 
 -- Environment
 envEmpty :: Env
 envEmpty = Env {env_map = M.empty, env_pred_mem = globalMem}
 
-envInsert :: SIdent -> SMemRef -> Env -> Env
+envInsert :: Ident -> MemRef -> Env -> Env
 envInsert id mem env = envInsertList [(id, mem)] env
 
-envInsertList :: [(SIdent, SMemRef)] -> Env -> Env
+envInsertList :: [(Ident, MemRef)] -> Env -> Env
 envInsertList kvs env = env {env_map = mapInsertList kvs $ env_map env}
 
-envDelete :: SIdent -> Env -> Env
+envDelete :: Ident -> Env -> Env
 envDelete id env = envDeleteList [id] env
 
-envDeleteList :: [SIdent] -> Env -> Env
+envDeleteList :: [Ident] -> Env -> Env
 envDeleteList ids env = env {env_map = mapDeleteList ids $ env_map env}
 
-envAssignPred :: SMemRef -> Env -> Env
+envAssignPred :: MemRef -> Env -> Env
 envAssignPred mem env = env {env_pred_mem = mem}
 
-envBinds :: Env -> [(SIdent, SMemRef)]
+envBinds :: Env -> [(Ident, MemRef)]
 envBinds env = M.toList $ env_map env
 
 -- Heap
 heapEmpty :: Heap
 heapEmpty = Heap {heap_map = M.empty, heap_next_mem = memNext memNull}
 
-heapInsert :: SMemRef -> HeapObj -> Heap -> Heap
+heapInsert :: MemRef -> HeapObj -> Heap -> Heap
 heapInsert mem hobj heap = heapInsertList [(mem, hobj)] heap
 
-heapInsertList :: [(SMemRef, HeapObj)] -> Heap -> Heap
+heapInsertList :: [(MemRef, HeapObj)] -> Heap -> Heap
 heapInsertList kvs heap = heap {heap_map = mapInsertList kvs $ heap_map heap}
 
-heapDelete :: SMemRef -> Heap -> Heap
+heapDelete :: MemRef -> Heap -> Heap
 heapDelete mem heap = heapDeleteList [mem] heap
 
-heapDeleteList :: [SMemRef] -> Heap -> Heap
+heapDeleteList :: [MemRef] -> Heap -> Heap
 heapDeleteList mems heap =
   heap {heap_map = mapDeleteList mems $ heap_map heap}
 
-heapAlloc :: HeapObj -> Heap -> (SMemRef, Heap)
+heapAlloc :: HeapObj -> Heap -> (MemRef, Heap)
 heapAlloc hobj heap =
   let used_mem = heap_next_mem heap in
   let heap2 = heapInsert used_mem hobj heap in
     (used_mem, heap2 {heap_next_mem = memNext used_mem})
 
-heapAllocList :: [HeapObj] -> Heap -> ([SMemRef], Heap)
+heapAllocList :: [HeapObj] -> Heap -> ([MemRef], Heap)
 heapAllocList [] heap = ([], heap)
 heapAllocList (hobj : hobjs) heap =
   let (used_mem, heap2) = heapAlloc hobj heap in
   let (used_mems, heap3) = heapAllocList hobjs heap2 in
     (used_mem : used_mems, heap3)
 
-heapAllocSConst :: SConst -> Heap -> (SMemRef, Heap)
-heapAllocSConst const heap =
-  heapAlloc (DataObj (VecVal (vecFromSConst const)) attrsEmpty) heap
+heapAllocConst :: Const -> Heap -> (MemRef, Heap)
+heapAllocConst const heap =
+  heapAlloc (DataObj (VecVal (vecFromConst const)) attrsEmpty) heap
 
-heapBinds :: Heap -> [(SMemRef, HeapObj)]
+heapBinds :: Heap -> [(MemRef, HeapObj)]
 heapBinds heap = M.toList $ heap_map heap
 
 -- Attributes
 attrsEmpty :: Attributes
 attrsEmpty = Attributes {attrs_map = M.empty}
 
-attrsInsert :: String -> SMemRef -> Attributes -> Attributes
+attrsInsert :: String -> MemRef -> Attributes -> Attributes
 attrsInsert str mem attrs = attrsInsertList [(str, mem)] attrs
 
-attrsInsertList :: [(String, SMemRef)] -> Attributes -> Attributes
+attrsInsertList :: [(String, MemRef)] -> Attributes -> Attributes
 attrsInsertList kvs attrs =
   attrs {attrs_map = mapInsertList kvs $ attrs_map attrs}
 
@@ -114,7 +114,7 @@ attrsDeleteList :: [String] -> Attributes -> Attributes
 attrsDeleteList strs attrs =
   attrs {attrs_map = mapDeleteList strs $ attrs_map attrs}
 
-attrsBinds :: Attributes -> [(String, SMemRef)]
+attrsBinds :: Attributes -> [(String, MemRef)]
 attrsBinds attrs = M.toList $ attrs_map attrs
 
 -- Stack
@@ -132,12 +132,12 @@ stackPop stack = case stack_list stack of
   [] -> Nothing
   (frame : frames) -> Just (frame, stack {stack_list = frames})
 
-stackPopV :: Stack -> Maybe (Slot, SMemRef, Stack)
+stackPopV :: Stack -> Maybe (Slot, MemRef, Stack)
 stackPopV stack = case stackPop stack of
   Just (frame, stack2) -> Just (frame_slot frame, frame_env_mem frame, stack2)
   Nothing -> Nothing
 
-stackPopV2 :: Stack -> Maybe (Slot, SMemRef, Slot, SMemRef, Stack)
+stackPopV2 :: Stack -> Maybe (Slot, MemRef, Slot, MemRef, Stack)
 stackPopV2 stack = case stackPopV stack of
   Nothing -> Nothing
   Just (slot1, mem1, stack2) ->
@@ -149,7 +149,7 @@ stackPopV2 stack = case stackPopV stack of
 symMemsEmpty :: SymMems
 symMemsEmpty = SymMems {smems_list = []}
 
-symMemsAppend :: SMemRef -> SymMems -> SymMems
+symMemsAppend :: MemRef -> SymMems -> SymMems
 symMemsAppend mem smems = smems {smems_list = smems_list smems ++ [mem]}
 
 -- State

@@ -1,30 +1,26 @@
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE FlexibleInstances #-} 
 module SimpleR.Language.SyntaxUtils where
-
-import Data.Complex as C
 
 import SimpleR.Language.Syntax
 
 -- Annotations
-defaultIdAnnot :: SIdentAnnot
-defaultIdAnnot = SIdentAnnot
+defaultIdAnnot :: IdentAnnot
+defaultIdAnnot = IdentAnnot
 
 -- MemRef
-memFromInt :: Int -> SMemRef
-memFromInt int = SMemRef {smem_addr = int}
+memFromInt :: Int -> MemRef
+memFromInt int = MemRef {smem_addr = int}
 
-memNull :: SMemRef
+memNull :: MemRef
 memNull = memFromInt 0
 
-memNext :: SMemRef -> SMemRef
+memNext :: MemRef -> MemRef
 memNext mem = memFromInt $ 1 + smem_addr mem
 
 -- Ident
-idDefault :: SIdent
+idDefault :: Ident
 idDefault = idFromString ""
 
-idFromString :: String -> SIdent
+idFromString :: String -> Ident
 idFromString str =
-  SIdent {sid_name = str, sid_pkg = Nothing, sid_annot = defaultIdAnnot}
+  Ident {sid_name = str, sid_pkg = Nothing, sid_annot = defaultIdAnnot}
 

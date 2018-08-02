@@ -4,63 +4,63 @@ import qualified Data.Complex as C
 
 type Complex = C.Complex Double
 
-data SIdentAnnot = SIdentAnnot deriving (Ord, Eq, Show, Read)
+data IdentAnnot = IdentAnnot deriving (Ord, Eq, Show, Read)
 
-data SIdent = SIdent
+data Ident = Ident
   { sid_pkg :: Maybe String
   , sid_name :: String
-  , sid_annot :: SIdentAnnot
+  , sid_annot :: IdentAnnot
   } deriving (Ord, Eq, Show, Read)
 
-data STickAnnot = STickAnnot deriving (Eq, Show, Read)
+data TickAnnot = TickAnnot deriving (Eq, Show, Read)
 
-data STick = STick
-  { stick_annot :: STickAnnot
+data Tick = Tick
+  { tick_annot :: TickAnnot
   } deriving (Eq, Show, Read)
 
-data SMemRef = SMemRef
+data MemRef = MemRef
   { smem_addr :: Int
   } deriving (Ord, Eq, Show, Read)
 
-data SConst =
-    SIntConst Int
-  | SDoubleConst Double
-  | SComplexConst (Complex)
-  | SBoolConst Bool
-  | SStringConst String
-  | SNilConst
-  | SNaConst
+data Const =
+    IntConst Int
+  | DoubleConst Double
+  | ComplexConst Complex
+  | BoolConst Bool
+  | StringConst String
+  | NilConst
+  | NaConst
   deriving (Eq, Show, Read)
 
-data SParam =
-    SParam SIdent
-  | SDefault SIdent SExpr
-  | SVarParam
+data Param =
+    Param Ident
+  | Default Ident Expr
+  | VarParam
   deriving (Eq, Show, Read)
 
-data SArg =
-    SArg SExpr
-  | SNamed SIdent SExpr
-  | SVarArg
+data Arg =
+    Arg Expr
+  | Named Ident Expr
+  | VarArg
   deriving (Eq, Show, Read)
 
-data SExpr =
-    SVar SIdent
-  | SMem SMemRef
-  | SConst SConst
-  | SSeq [SExpr]
-  | SLambdaAbs [SParam] SExpr
-  | SLambdaApp SExpr [SArg]
-  | SNativeLambdaApp SIdent [SArg]
-  | SReturn SExpr
-  | SAssign SExpr SExpr
-  | SSuperAssign SExpr SExpr
-  | SIf SExpr SExpr SExpr
-  | SWhile SExpr SExpr
-  | SBreak
-  | SNext
-  | SError
-  | STix STick SExpr
+data Expr =
+    Var Ident
+  | Mem MemRef
+  | Const Const
+  | Seq [Expr]
+  | LambdaAbs [Param] Expr
+  | LambdaApp Expr [Arg]
+  | NativeLambdaApp Ident [Arg]
+  | Return Expr
+  | Assign Expr Expr
+  | SuperAssign Expr Expr
+  | If Expr Expr Expr
+  | While Expr Expr
+  | Break
+  | Next
+  | Error
+  | Tix Tick Expr
   deriving (Eq, Show, Read)
 
 
