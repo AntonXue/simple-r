@@ -111,6 +111,9 @@ heapBinds heap = M.toList $ heapMap heap
 attrsEmpty :: Attributes
 attrsEmpty = Attributes { attrsMap = M.empty }
 
+attrsLookup :: String -> Attributes -> Maybe MemRef
+attrsLookup str attrs = M.lookup str $ attrsMap attrs
+
 attrsInsert :: String -> MemRef -> Attributes -> Attributes
 attrsInsert str mem attrs = attrsInsertList [(str, mem)] attrs
 

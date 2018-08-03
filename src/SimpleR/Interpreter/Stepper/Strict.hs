@@ -26,6 +26,15 @@ pullArgs (arg : args) heap = do
   case arg of
     (Arg _, mem) -> Just $ (Left mem) : args2
     (Named id expr, mem) -> Just $ (Right (id, mem)) : args2
+    (VarArg, mem) -> do
+      (DataObj (RefsVal varMems) attrs) <- heapLookup mem heap
+      nameMem <- attrsLookup "name" attrs
+      (DataObj (VecVal (StringVec nameStrs)) _) <- heapLookup nameMem heap
+      if length nameStrs == length varMems then
+        let pairs = map Right $ zip (map mkId nameStrs) varMems in
+          Just $ pairs ++ args2
+      else
+        Nothing
 
 
 
