@@ -7,20 +7,19 @@ defaultIdAnnot :: IdentAnnot
 defaultIdAnnot = IdentAnnot
 
 -- MemRef
-memFromInt :: Int -> MemRef
-memFromInt int = MemRef {mem_addr = int}
+mkMem :: Int -> MemRef
+mkMem int = MemRef { memAddr = int }
 
 memNull :: MemRef
-memNull = memFromInt 0
+memNull = mkMem 0
 
 memNext :: MemRef -> MemRef
-memNext mem = memFromInt $ 1 + mem_addr mem
+memNext mem = mkMem $ 1 + memAddr mem
 
 -- Ident
 idDefault :: Ident
-idDefault = idFromString ""
+idDefault = mkId ""
 
-idFromString :: String -> Ident
-idFromString str =
-  Ident {id_name = str, id_pkg = Nothing, id_annot = defaultIdAnnot}
+mkId :: String -> Ident
+mkId str = Ident { idName = str, idPkg = Nothing, idAnnot = defaultIdAnnot }
 

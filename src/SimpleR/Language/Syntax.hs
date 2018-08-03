@@ -7,19 +7,19 @@ type Complex = C.Complex Double
 data IdentAnnot = IdentAnnot deriving (Ord, Eq, Show, Read)
 
 data Ident = Ident
-  { id_pkg :: Maybe String
-  , id_name :: String
-  , id_annot :: IdentAnnot
+  { idPkg :: Maybe String
+  , idName :: String
+  , idAnnot :: IdentAnnot
   } deriving (Ord, Eq, Show, Read)
 
 data TickAnnot = TickAnnot deriving (Eq, Show, Read)
 
 data Tick = Tick
-  { tick_annot :: TickAnnot
+  { tickAnnot :: TickAnnot
   } deriving (Eq, Show, Read)
 
 data MemRef = MemRef
-  { mem_addr :: Int
+  { memAddr :: Int
   } deriving (Ord, Eq, Show, Read)
 
 data Const =

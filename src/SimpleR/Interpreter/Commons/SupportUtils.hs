@@ -20,121 +20,132 @@ globalMem = memNull
 
 -- Identifier
 idVariadic :: Ident
-idVariadic = idFromString "..."
+idVariadic = mkId "..."
 
-freshId :: State -> (Ident, State)
-freshId = undefined
+mkFreshId :: State -> (Ident, State)
+mkFreshId = undefined
 
-freshIdSeeded :: String -> State -> (Ident, State)
-freshIdSeeded = undefined
+mkFreshIdSeeded :: String -> State -> (Ident, State)
+mkFreshIdSeeded = undefined
 
 -- Vector conversion
-vecFromConst :: Const -> Vector
-vecFromConst (IntConst int) = IntVec [int]
-vecFromConst (DoubleConst double) = DoubleVec [double]
-vecFromConst (ComplexConst complex) = ComplexVec [complex]
-vecFromConst (BoolConst bool) = BoolVec [bool]
-vecFromConst (StringConst str) = StringVec [str]
-vecFromConst (NaConst) = NilVec
+mkConstVec :: Const -> Vector
+mkConstVec (IntConst int) = IntVec [int]
+mkConstVec (DoubleConst double) = DoubleVec [double]
+mkConstVec (ComplexConst complex) = ComplexVec [complex]
+mkConstVec (BoolConst bool) = BoolVec [bool]
+mkConstVec (StringConst str) = StringVec [str]
+mkConstVec (NaConst) = NilVec
 
 -- Environment
 envEmpty :: Env
-envEmpty = Env {env_map = M.empty, env_pred_mem = globalMem}
+envEmpty = Env { envMap = M.empty, envPredMem = globalMem }
+
+envLookup :: Ident -> Env -> Maybe MemRef
+envLookup id env = M.lookup id $ envMap env
 
 envInsert :: Ident -> MemRef -> Env -> Env
 envInsert id mem env = envInsertList [(id, mem)] env
 
 envInsertList :: [(Ident, MemRef)] -> Env -> Env
-envInsertList kvs env = env {env_map = mapInsertList kvs $ env_map env}
+envInsertList kvs env = env { envMap = mapInsertList kvs $ envMap env }
 
 envDelete :: Ident -> Env -> Env
 envDelete id env = envDeleteList [id] env
 
 envDeleteList :: [Ident] -> Env -> Env
-envDeleteList ids env = env {env_map = mapDeleteList ids $ env_map env}
+envDeleteList ids env = env { envMap = mapDeleteList ids $ envMap env }
 
 envAssignPred :: MemRef -> Env -> Env
-envAssignPred mem env = env {env_pred_mem = mem}
+envAssignPred mem env = env { envPredMem = mem }
 
 envBinds :: Env -> [(Ident, MemRef)]
-envBinds env = M.toList $ env_map env
+envBinds env = M.toList $ envMap env
 
 -- Heap
 heapEmpty :: Heap
-heapEmpty = Heap {heap_map = M.empty, heap_next_mem = memNext memNull}
+heapEmpty = Heap { heapMap = M.empty, heapNextMem = memNext memNull }
+
+heapLookup :: MemRef -> Heap -> Maybe HeapObj
+heapLookup mem heap = M.lookup mem $ heapMap heap
+
+heapEnvLookup :: MemRef -> Ident -> Heap -> Maybe MemRef
+heapEnvLookup envMem id heap =
+  case heapLookup envMem heap of
+    Just (DataObj (EnvVal env) _) -> envLookup id env
 
 heapInsert :: MemRef -> HeapObj -> Heap -> Heap
 heapInsert mem hobj heap = heapInsertList [(mem, hobj)] heap
 
 heapInsertList :: [(MemRef, HeapObj)] -> Heap -> Heap
-heapInsertList kvs heap = heap {heap_map = mapInsertList kvs $ heap_map heap}
+heapInsertList kvs heap = heap { heapMap = mapInsertList kvs $ heapMap heap }
 
 heapDelete :: MemRef -> Heap -> Heap
 heapDelete mem heap = heapDeleteList [mem] heap
 
 heapDeleteList :: [MemRef] -> Heap -> Heap
 heapDeleteList mems heap =
-  heap {heap_map = mapDeleteList mems $ heap_map heap}
+  heap { heapMap = mapDeleteList mems $ heapMap heap }
 
 heapAlloc :: HeapObj -> Heap -> (MemRef, Heap)
 heapAlloc hobj heap =
-  let used_mem = heap_next_mem heap in
-  let heap2 = heapInsert used_mem hobj heap in
-    (used_mem, heap2 {heap_next_mem = memNext used_mem})
+  let usedMem = heapNextMem heap in
+  let heap2 = heapInsert usedMem hobj heap in
+    (usedMem, heap2 { heapNextMem = memNext usedMem })
 
 heapAllocList :: [HeapObj] -> Heap -> ([MemRef], Heap)
 heapAllocList [] heap = ([], heap)
 heapAllocList (hobj : hobjs) heap =
-  let (used_mem, heap2) = heapAlloc hobj heap in
-  let (used_mems, heap3) = heapAllocList hobjs heap2 in
-    (used_mem : used_mems, heap3)
+  let (usedMem, heap2) = heapAlloc hobj heap in
+  let (usedMems, heap3) = heapAllocList hobjs heap2 in
+    (usedMem : usedMems, heap3)
 
 heapAllocConst :: Const -> Heap -> (MemRef, Heap)
 heapAllocConst const heap =
-  heapAlloc (DataObj (VecVal (vecFromConst const)) attrsEmpty) heap
+  heapAlloc (DataObj (VecVal (mkConstVec const)) attrsEmpty) heap
 
 heapBinds :: Heap -> [(MemRef, HeapObj)]
-heapBinds heap = M.toList $ heap_map heap
+heapBinds heap = M.toList $ heapMap heap
 
 -- Attributes
 attrsEmpty :: Attributes
-attrsEmpty = Attributes {attrs_map = M.empty}
+attrsEmpty = Attributes { attrsMap = M.empty }
 
 attrsInsert :: String -> MemRef -> Attributes -> Attributes
 attrsInsert str mem attrs = attrsInsertList [(str, mem)] attrs
 
 attrsInsertList :: [(String, MemRef)] -> Attributes -> Attributes
 attrsInsertList kvs attrs =
-  attrs {attrs_map = mapInsertList kvs $ attrs_map attrs}
+  attrs { attrsMap = mapInsertList kvs $ attrsMap attrs }
 
 attrsDelete :: String -> Attributes -> Attributes
 attrsDelete str attrs = attrsDeleteList [str] attrs
 
 attrsDeleteList :: [String] -> Attributes -> Attributes
 attrsDeleteList strs attrs =
-  attrs {attrs_map = mapDeleteList strs $ attrs_map attrs}
+  attrs { attrsMap = mapDeleteList strs $ attrsMap attrs }
 
 attrsBinds :: Attributes -> [(String, MemRef)]
-attrsBinds attrs = M.toList $ attrs_map attrs
+attrsBinds attrs = M.toList $ attrsMap attrs
 
 -- Stack
 stackEmpty :: Stack
-stackEmpty = Stack {stack_list = []}
+stackEmpty = Stack { stackList = [] }
 
 stackPush :: Frame -> Stack -> Stack
 stackPush frame stack = stackPushList [frame] stack
 
 stackPushList :: [Frame] -> Stack -> Stack
-stackPushList frames stack = stack {stack_list = frames ++ stack_list stack }
+stackPushList frames stack = stack { stackList = frames ++ stackList stack }
 
 stackPop :: Stack -> Maybe (Frame, Stack)
-stackPop stack = case stack_list stack of
+stackPop stack = case stackList stack of
   [] -> Nothing
-  (frame : frames) -> Just (frame, stack {stack_list = frames})
+  (frame : frames) -> Just (frame, stack { stackList = frames })
 
 stackPopV :: Stack -> Maybe (Slot, MemRef, Stack)
 stackPopV stack = case stackPop stack of
-  Just (frame, stack2) -> Just (frame_slot frame, frame_env_mem frame, stack2)
+  Just (frame, stack2) -> Just (frameSlot frame, frameEnvMem frame, stack2)
   Nothing -> Nothing
 
 stackPopV2 :: Stack -> Maybe (Slot, MemRef, Slot, MemRef, Stack)
@@ -145,23 +156,30 @@ stackPopV2 stack = case stackPopV stack of
       Nothing -> Nothing
       Just (slot2, mem2, stack3) -> Just (slot1, mem1, slot2, mem2, stack3)
 
+-- Frames
+frameDefault :: Frame
+frameDefault = Frame { frameEnvMem = memNull, frameSlot = ReturnSlot memNull }
+
+mkFrame :: MemRef -> Slot -> Frame
+mkFrame envMem slot = frameDefault { frameEnvMem = envMem, frameSlot = slot }
+
 -- Symbolic Memories
 symMemsEmpty :: SymMems
-symMemsEmpty = SymMems {smems_list = []}
+symMemsEmpty = SymMems { symMemsList = [] }
 
 symMemsAppend :: MemRef -> SymMems -> SymMems
-symMemsAppend mem smems = smems {smems_list = smems_list smems ++ [mem]}
+symMemsAppend mem smems = smems { symMemsList = symMemsList smems ++ [mem] }
 
 -- State
 stateDefault :: State
 stateDefault =
-  State { st_stack = stackEmpty
-        , st_heap = heapEmpty
-        , st_base_env_mem = baseMem
-        , st_glbl_env_mem = globalMem
-        , st_sym_mems = symMemsEmpty
-        , st_fresh_count = 1
-        , st_pred_unique = 0
-        , st_unique = 1 }
+  State { stStack = stackEmpty
+        , stHeap = heapEmpty
+        , stBaseEnvMem = baseMem
+        , stGlobalEnvMem = globalMem
+        , stSymMems = symMemsEmpty
+        , stFreshCount = 1
+        , stPredUnique = 0
+        , stUnique = 1 }
 
 

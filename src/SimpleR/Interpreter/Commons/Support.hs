@@ -9,13 +9,13 @@ data Type = IntTy | DoubleTy | ComplexTy | BoolTy | StringTy
   deriving (Eq, Show, Read)
 
 data Env = Env
-  { env_map :: M.Map Ident MemRef
-  , env_pred_mem :: MemRef
+  { envMap :: M.Map Ident MemRef
+  , envPredMem :: MemRef
   } deriving (Eq, Show, Read)
 
 data Heap = Heap
-  { heap_map :: M.Map MemRef HeapObj
-  , heap_next_mem :: MemRef
+  { heapMap :: M.Map MemRef HeapObj
+  , heapNextMem :: MemRef
   } deriving (Eq, Show, Read)
 
 data HeapObj =
@@ -41,20 +41,20 @@ data Vector =
   deriving (Eq, Show, Read)
 
 data Attributes = Attributes
-  { attrs_map :: M.Map String MemRef
+  { attrsMap :: M.Map String MemRef
   } deriving (Eq, Show, Read)
 
 data Constraint = Constraint
-  { const_list :: [SmtExpr]
+  { constList :: [SmtExpr]
   } deriving (Eq, Show, Read)
 
 data Stack = Stack
-  { stack_list :: [Frame]
+  { stackList :: [Frame]
   } deriving (Eq, Show, Read)
 
 data Frame = Frame
-  { frame_env_mem :: MemRef
-  , frame_slot :: Slot
+  { frameEnvMem :: MemRef
+  , frameSlot :: Slot
   } deriving (Eq, Show, Read)
 
 data LoopState =
@@ -80,17 +80,17 @@ data Slot =
   deriving (Eq, Show, Read)
 
 data SymMems = SymMems
-  { smems_list :: [MemRef]
+  { symMemsList :: [MemRef]
   } deriving (Eq, Show, Read)
 
 data State = State
-  { st_stack :: Stack
-  , st_heap :: Heap
-  , st_base_env_mem :: MemRef
-  , st_glbl_env_mem :: MemRef
-  , st_sym_mems :: SymMems
-  , st_fresh_count :: Int
-  , st_pred_unique :: Int
-  , st_unique :: Int
+  { stStack :: Stack
+  , stHeap :: Heap
+  , stBaseEnvMem :: MemRef
+  , stGlobalEnvMem :: MemRef
+  , stSymMems :: SymMems
+  , stFreshCount :: Int
+  , stPredUnique :: Int
+  , stUnique :: Int
   } deriving (Eq, Show, Read)
 
