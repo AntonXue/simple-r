@@ -4,6 +4,7 @@ import qualified Data.Map as M
 
 import SimpleR.Language
 import SimpleR.Interpreter.Commons.Support
+import SimpleR.Smt
 
 mapInsertList :: (Ord k) => [(k, v)] -> M.Map k v -> M.Map k v
 mapInsertList kvs map = foldl (\m (k, v) -> M.insert k v m) map kvs
@@ -22,11 +23,11 @@ globalMem = memNull
 idVariadic :: Ident
 idVariadic = mkId "..."
 
-mkFreshId :: State -> (Ident, State)
-mkFreshId = undefined
+mkIdFresh :: State -> (Ident, State)
+mkIdFresh = undefined
 
-mkFreshIdSeeded :: String -> State -> (Ident, State)
-mkFreshIdSeeded = undefined
+mkIdFreshSeeded :: String -> State -> (Ident, State)
+mkIdFreshSeeded = undefined
 
 -- Vector conversion
 mkConstVec :: Const -> Vector
@@ -181,6 +182,17 @@ symMemsEmpty = SymMems { symMemsList = [] }
 symMemsAppend :: MemRef -> SymMems -> SymMems
 symMemsAppend mem smems = smems { symMemsList = symMemsList smems ++ [mem] }
 
+-- Constraint
+constrEmpty :: Constraint
+constrEmpty = Constraint { constrList = [] }
+
+constrAppend :: SmtExpr -> Constraint -> Constraint
+constrAppend smt constr = constrAppendList [smt] constr
+
+constrAppendList :: [SmtExpr] -> Constraint -> Constraint
+constrAppendList smts constr =
+  constr { constrList = (constrList constr) ++ smts }
+
 -- State
 stateDefault :: State
 stateDefault =
@@ -189,6 +201,7 @@ stateDefault =
         , stBaseEnvMem = baseMem
         , stGlobalEnvMem = globalMem
         , stSymMems = symMemsEmpty
+        , stConstr = constrEmpty
         , stFreshCount = 1
         , stPredUnique = 0
         , stUnique = 1 }

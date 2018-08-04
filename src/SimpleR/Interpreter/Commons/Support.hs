@@ -37,7 +37,7 @@ data Vector =
   | BoolVec [Bool]
   | StringVec [String]
   | NilVec
-  | SymVec SmtIdent Type Constraint
+  | SymVec SmtIdent Type
   deriving (Eq, Show, Read)
 
 data Attributes = Attributes
@@ -45,7 +45,7 @@ data Attributes = Attributes
   } deriving (Eq, Show, Read)
 
 data Constraint = Constraint
-  { constList :: [SmtExpr]
+  { constrList :: [SmtExpr]
   } deriving (Eq, Show, Read)
 
 data Stack = Stack
@@ -89,6 +89,7 @@ data State = State
   , stBaseEnvMem :: MemRef
   , stGlobalEnvMem :: MemRef
   , stSymMems :: SymMems
+  , stConstr :: Constraint
   , stFreshCount :: Int
   , stPredUnique :: Int
   , stUnique :: Int

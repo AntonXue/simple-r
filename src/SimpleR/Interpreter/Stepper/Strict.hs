@@ -7,6 +7,7 @@ import Data.Maybe
 import SimpleR.Language
 import SimpleR.Interpreter.Commons
 import SimpleR.Interpreter.Stepper.ParamArgMatching
+import SimpleR.Interpreter.Natives
 
 -- Helper functions
 splitEithers :: [Either a b] -> ([a], [b])
@@ -27,6 +28,17 @@ splitBinds binds =
         Right expr -> (accL, accR ++ [(id, expr)]))
     ([], []) binds
 
+isMemConcTrue :: MemRef -> Heap -> Bool
+isMemConcTrue mem heap =
+  case heapLookup mem heap of
+    Just (DataObj (VecVal vec) _) ->
+      case vec of
+        IntVec (x : _) -> x /= 0
+        DoubleVec (x : _) -> x /= 0
+        ComplexVec (x : _) -> x /= 0
+        BoolVec (x : _) -> x
+        _ -> False
+    _ -> False
 
 exprFromArg :: Arg -> Expr
 exprFromArg (Arg expr) = expr
@@ -149,6 +161,86 @@ rule_LambdaAppEnter state = maybeToList $ do
   return $
     state { stStack = stackPushList (aFrames ++ [fFrame, cFrame]) cStack2
           , stHeap = heap3 }
+
+rule_LambdaComplete :: State -> [State]
+rule_LambdaComplete state =
+  case stackPopV $ stStack state of
+    Just (EvalSlot (NativeLambdaApp _ _), _, _) -> nativeCall state
+    _ -> []
+
+rule_AssignId :: State -> [State]
+rule_AssignId state = maybeToList $ do
+  (EvalSlot (Assign (Var id) expr), cEnvMem, cStack2)
+    <- stackPopV $ stStack state
+  let eFrame = mkFrame cEnvMem $ EvalSlot expr
+  let cFrame = mkFrame cEnvMem $ AssignSlot id
+  return $ state { stStack = stackPushList [eFrame, cFrame] cStack2 }
+
+rule_AssignString :: State -> [State]
+rule_AssignString state = maybeToList $ do
+  (EvalSlot (Assign (Const (StringConst str)) expr), cEnvMem, cStack2)
+    <- stackPopV $ stStack state
+  let cFrame = mkFrame cEnvMem $ EvalSlot $ Assign (Var $ mkId str) expr
+  return $ state { stStack = stackPush cFrame cStack2 }
+
+rule_AssignRet :: State -> [State]
+rule_AssignRet state = maybeToList $ do
+  (ReturnSlot mem, _, AssignSlot id, cEnvMem, cStack2)
+    <- stackPopV2 $ stStack state
+  heap2 <- heapEnvInsert cEnvMem id mem $ stHeap state
+  let cFrame = mkFrame cEnvMem $ ReturnSlot mem
+  return $ state { stHeap = heap2
+                 , stStack = stackPush cFrame cStack2 }
+
+rule_If :: State -> [State]
+rule_If state = maybeToList $ do
+  (EvalSlot (If cond true false), cEnvMem, cStack2)
+    <- stackPopV $ stStack state
+  let aFrame = mkFrame cEnvMem $ EvalSlot cond
+  let cFrame = mkFrame cEnvMem $ BranchSlot true false
+  return $ state { stStack = stackPushList [aFrame, cFrame] cStack2 }
+
+rule_IfRet :: State -> [State]
+rule_IfRet state = maybeToList $ do
+  (ReturnSlot condMem, _,
+   BranchSlot true false, cEnvMem,
+   cStack2) <- stackPopV2 $ stStack state
+  let branch = if isMemConcTrue condMem $ stHeap state then true else false
+  let cFrame = mkFrame cEnvMem $ EvalSlot branch
+  return $ state { stStack = stackPush cFrame cStack2 }
+
+rule_IfRetSym :: State -> [State]
+rule_IfRetSym state = undefined
+
+rule_While :: State -> [State]
+rule_While state = undefined
+
+rule_WhileTrue :: State -> [State]
+rule_WhileTrue state = undefined
+
+rule_WhileBodyRet :: State -> [State]
+rule_WhileBodyRet state = undefined
+
+rule_WhileFalse :: State -> [State]
+rule_WhileFalse state = undefined
+
+rule_WhileSym :: State -> [State]
+rule_WhileSym state = undefined
+
+rule_Break :: State -> [State]
+rule_Break state = undefined
+
+rule_Next :: State -> [State]
+rule_Next state = undefined
+
+rule_Return :: State -> [State]
+rule_Return state = undefined
+
+rule_Discard :: State -> [State]
+rule_Discard state = undefined
+
+rule_Blank :: State -> [State]
+rule_Blank state = undefined
 
 
 
