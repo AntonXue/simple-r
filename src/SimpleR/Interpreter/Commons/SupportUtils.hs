@@ -70,9 +70,9 @@ heapLookup :: MemRef -> Heap -> Maybe HeapObj
 heapLookup mem heap = M.lookup mem $ heapMap heap
 
 heapEnvLookup :: MemRef -> Ident -> Heap -> Maybe MemRef
-heapEnvLookup envMem id heap =
-  case heapLookup envMem heap of
-    Just (DataObj (EnvVal env) _) -> envLookup id env
+heapEnvLookup envMem id heap = do
+  DataObj (EnvVal env) _ <- heapLookup envMem heap
+  envLookup id env
 
 heapInsert :: MemRef -> HeapObj -> Heap -> Heap
 heapInsert mem hobj heap = heapInsertList [(mem, hobj)] heap
@@ -106,6 +106,15 @@ heapAllocConst const heap =
 
 heapBinds :: Heap -> [(MemRef, HeapObj)]
 heapBinds heap = M.toList $ heapMap heap
+
+heapEnvInsert :: MemRef -> Ident -> MemRef -> Heap -> Maybe Heap
+heapEnvInsert envMem id mem heap = heapEnvInsertList envMem [(id, mem)] heap
+
+heapEnvInsertList :: MemRef -> [(Ident, MemRef)] -> Heap -> Maybe Heap
+heapEnvInsertList envMem kvs heap = do
+  DataObj (EnvVal env) attrs <- heapLookup envMem heap
+  let env2 = envInsertList kvs env
+  return $ heapInsert envMem (DataObj (EnvVal env2) attrs) heap
 
 -- Attributes
 attrsEmpty :: Attributes
@@ -142,22 +151,21 @@ stackPushList :: [Frame] -> Stack -> Stack
 stackPushList frames stack = stack { stackList = frames ++ stackList stack }
 
 stackPop :: Stack -> Maybe (Frame, Stack)
-stackPop stack = case stackList stack of
-  [] -> Nothing
-  (frame : frames) -> Just (frame, stack { stackList = frames })
+stackPop stack =
+  case stackList stack of
+    [] -> Nothing
+    (frame : frames) -> return (frame, stack { stackList = frames })
 
 stackPopV :: Stack -> Maybe (Slot, MemRef, Stack)
-stackPopV stack = case stackPop stack of
-  Just (frame, stack2) -> Just (frameSlot frame, frameEnvMem frame, stack2)
-  Nothing -> Nothing
+stackPopV stack = do
+  (frame, stack2) <- stackPop stack
+  return (frameSlot frame, frameEnvMem frame, stack2)
 
 stackPopV2 :: Stack -> Maybe (Slot, MemRef, Slot, MemRef, Stack)
-stackPopV2 stack = case stackPopV stack of
-  Nothing -> Nothing
-  Just (slot1, mem1, stack2) ->
-    case stackPopV stack2 of
-      Nothing -> Nothing
-      Just (slot2, mem2, stack3) -> Just (slot1, mem1, slot2, mem2, stack3)
+stackPopV2 stack = do
+  (slot1, envMem1, stack2) <- stackPopV stack
+  (slot2, envMem2, stack3) <- stackPopV stack2
+  return (slot1, envMem1, slot2, envMem2, stack3)
 
 -- Frames
 frameDefault :: Frame

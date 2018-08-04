@@ -26,7 +26,7 @@ data HeapObj =
 data Value =
     VecVal Vector
   | RefsVal [MemRef]
-  | FuncVal MemRef [Param] Expr
+  | FunVal MemRef [Param] Expr
   | EnvVal Env
   deriving (Eq, Show, Read)
 

@@ -3,13 +3,6 @@ module SimpleR.Interpreter.Stepper.ParamArgMatching where
 import SimpleR.Language
 import SimpleR.Interpreter.Commons
 
-splitEithers :: [Either a b] -> ([a], [b])
-splitEithers [] = ([], [])
-splitEithers (e : es) =
-  let (as, bs) = splitEithers es in
-    case e of
-      Left a -> (a : as, bs)
-      Right b -> (as, b : bs)
 
 -- Extract default (Ident, Expr) bindings from a [Param]
 bindsOfDefaults :: [Param] -> [(Ident, Expr)]
@@ -21,12 +14,12 @@ bindsOfDefaults ((Default id expr) : ps) = (id, expr) : bindsOfDefaults ps
 -- Linearize the arguments into a [Either MemRef (Ident, MemRef)] if possible.
 -- Flattens the variadics.
 pullArgs :: [(Arg, MemRef)] -> Heap -> Maybe [Either MemRef (Ident, MemRef)]
-pullArgs [] _ = Just []
+pullArgs [] _ = return []
 pullArgs (arg : args) heap = do
   args2 <- pullArgs args heap
   case arg of
-    (Arg _, mem) -> Just $ (Left mem) : args2
-    (Named id expr, mem) -> Just $ (Right (id, mem)) : args2
+    (Arg _, mem) -> return $ (Left mem) : args2
+    (Named id expr, mem) -> return $ (Right (id, mem)) : args2
     (VarArg, mem) -> do
       (DataObj (RefsVal varMems) attrs) <- heapLookup mem heap
       nameMem <- attrsLookup "name" attrs
@@ -35,7 +28,7 @@ pullArgs (arg : args) heap = do
         let strMemPairs = zip nameStrs varMems in
         let idMemPairs = map (\(n, m) -> if n == ""
                            then Left m else Right (mkId n, m)) strMemPairs in
-          Just $ idMemPairs ++ args2
+          return $ idMemPairs ++ args2
       else
         Nothing
 
@@ -132,7 +125,7 @@ matchLambdaApp params args env heap = do
     let (remParams, remArgs, namedArgs) = foldl defMatchFoldL acc pulled
     let (matched, vars) = positionalMatch remParams remArgs
     let binds = map (\(i, m) -> (i, Left m)) namedArgs
-    Just (binds , vars)
+    return (binds , vars)
     
 
 
