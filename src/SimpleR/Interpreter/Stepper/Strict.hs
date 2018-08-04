@@ -62,6 +62,21 @@ liftVariadics args envMem heap = do
   heap4 <- heapEnvInsert envMem idVariadic refsMem heap3
   return (refsMem, heap4)
 
+unwindToLoopSlot :: Stack -> Maybe ((Expr, Expr, LoopState), MemRef, Stack)
+unwindToLoopSlot stack = do
+  (slot, lEnvMem, stack2) <- stackPopV stack
+  case slot of
+    LoopSlot cond body loop -> return ((cond, body, loop), lEnvMem, stack2)
+    _ -> unwindToLoopSlot stack2
+
+unwindToLambdaBSlot :: Stack -> Maybe (MemRef, MemRef, Stack)
+unwindToLambdaBSlot stack = do
+  (slot, lEnvMem, stack2) <- stackPopV stack
+  case slot of
+    LambdaBSlot funMem -> return (funMem, lEnvMem, stack2)
+    _ -> unwindToLambdaBSlot stack2
+
+
 
 -- Rules
 
@@ -213,34 +228,76 @@ rule_IfRetSym :: State -> [State]
 rule_IfRetSym state = undefined
 
 rule_While :: State -> [State]
-rule_While state = undefined
+rule_While state = maybeToList $ do
+  (EvalSlot (While cond body), cEnvMem, cStack2) <- stackPopV $ stStack state
+  let dFrame = mkFrame cEnvMem $ EvalSlot cond
+  let cFrame = mkFrame cEnvMem $ LoopSlot cond body LoopStateCond
+  return $ state { stStack = stackPushList [dFrame, cFrame] cStack2 }
 
 rule_WhileTrue :: State -> [State]
-rule_WhileTrue state = undefined
+rule_WhileTrue state = maybeToList $ do
+  (ReturnSlot condMem, _,
+   LoopSlot cond body LoopStateCond, cEnvMem,
+   cStack2) <- stackPopV2 $ stStack state
+  _ <- if isMemConcTrue condMem $ stHeap state then return True else Nothing
+  let bFrame = mkFrame cEnvMem $ EvalSlot body
+  let cFrame = mkFrame cEnvMem $ LoopSlot cond body LoopStateBody
+  return $ state { stStack = stackPushList [bFrame, cFrame] cStack2 }
 
 rule_WhileBodyRet :: State -> [State]
-rule_WhileBodyRet state = undefined
+rule_WhileBodyRet state = maybeToList $ do
+  (ReturnSlot _, _,
+   LoopSlot cond body LoopStateBody, cEnvMem,
+   cStack2) <- stackPopV2 $ stStack state
+  let dFrame = mkFrame cEnvMem $ EvalSlot cond
+  let cFrame = mkFrame cEnvMem $ LoopSlot cond body LoopStateCond
+  return $ state { stStack = stackPushList [dFrame, cFrame] cStack2 }
 
 rule_WhileFalse :: State -> [State]
-rule_WhileFalse state = undefined
+rule_WhileFalse state = maybeToList $ do
+  (ReturnSlot condMem, _,
+   LoopSlot cond body LoopStateCond, cEnvMem,
+   cStack2) <- stackPopV2 $ stStack state
+  let cFrame = mkFrame cEnvMem $ ReturnSlot memNull
+  return $ state { stStack = stackPush cFrame cStack2 }
 
 rule_WhileSym :: State -> [State]
 rule_WhileSym state = undefined
 
 rule_Break :: State -> [State]
-rule_Break state = undefined
+rule_Break state = maybeToList $ do
+  (EvalSlot Break, _, cStack2) <- stackPopV $ stStack state
+  ((cond, body, _), lEnvMem, lStack) <- unwindToLoopSlot cStack2
+  let cFrame = mkFrame lEnvMem $ ReturnSlot memNull
+  return $ state { stStack = stackPush cFrame cStack2 }
 
 rule_Next :: State -> [State]
-rule_Next state = undefined
+rule_Next state = maybeToList $ do
+  (EvalSlot Next, _, cStack2) <- stackPopV $ stStack state
+  ((cond, body, _), lEnvMem, lStack) <- unwindToLoopSlot cStack2
+  let bFrame = mkFrame lEnvMem $ EvalSlot body
+  let cFrame = mkFrame lEnvMem $ LoopSlot cond body LoopStateBody
+  return $ state { stStack = stackPushList [bFrame, cFrame] cStack2 }
 
 rule_Return :: State -> [State]
-rule_Return state = undefined
+rule_Return state = maybeToList $ do
+  (EvalSlot (Return expr), cEnvMem, cStack2) <- stackPopV $ stStack state
+  (funMem, lEnvMem, fStack) <- unwindToLambdaBSlot cStack2
+  let rFrame = mkFrame cEnvMem $ EvalSlot expr
+  let cFrame = mkFrame lEnvMem $ LambdaBSlot funMem
+  return $ state { stStack = stackPushList [rFrame, cFrame] fStack }
 
-rule_Discard :: State -> [State]
-rule_Discard state = undefined
-
+rule_DiscardReturnSlot :: State -> [State]
+rule_DiscardReturnSlot state = maybeToList $ do
+  (ReturnSlot _, _, cStack2) <- stackPopV $ stStack state
+  case stackPopV cStack2 of
+    Just (EvalSlot _, _, _) -> return $ state { stStack = cStack2 }
+    Just (ReturnSlot _, _, _) -> return $ state { stStack = cStack2 }
+    Just (SeqSlot _, _, _) -> return $ state { stStack = cStack2 }
+    _ -> Nothing
+  
 rule_Blank :: State -> [State]
-rule_Blank state = undefined
+rule_Blank _ = []
 
 
 

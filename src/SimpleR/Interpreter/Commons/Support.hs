@@ -58,8 +58,8 @@ data Frame = Frame
   } deriving (Eq, Show, Read)
 
 data LoopState =
-    LoopCond
-  | LoopBody
+    LoopStateCond
+  | LoopStateBody
   deriving (Eq, Show, Read)
 
 data Slot =
