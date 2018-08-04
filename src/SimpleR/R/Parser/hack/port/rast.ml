@@ -152,9 +152,9 @@ type 'a program = ('a expr) list
 let string_of_ident : 'a ident -> string =
   fun id -> match id.pkg with
     | None ->
-      "RIdent {rid_pkg = Nothing, rid_name = \"" ^ id.name ^ "\", rid_src = Nothing, rid_annot = Nothing}"
+      "RIdent {ridPkg = Nothing, ridName = \"" ^ id.name ^ "\", ridSrc = Nothing, ridAnnot = Nothing}"
     | Some pkg -> 
-      "RIdent {rid_pkg = Just \"" ^ pkg ^ "\", rid_name = \"" ^ id.name ^ "\", rid_src = Nothing, rid_annot = Nothing}"
+      "RIdent {ridPkg = Just \"" ^ pkg ^ "\", ridName = \"" ^ id.name ^ "\", ridSrc = Nothing, ridAnnot = Nothing}"
 
 (*
 let string_of_numeric : numeric -> string =

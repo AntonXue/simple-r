@@ -4,24 +4,24 @@ import qualified Data.Complex as C
 
 
 data RSource = Source
-  { src_file :: String
-  , src_line :: Int
-  , src_col :: Int
+  { srcFile :: String
+  , srcLine :: Int
+  , srcCol :: Int
   } deriving (Eq, Show, Read)
 
 data RIdentAnnot = RIdentAnnot deriving (Eq, Show, Read)
 
 data RIdent = RIdent
-  { rid_pkg :: Maybe String
-  , rid_name :: String
-  , rid_src :: Maybe RSource
-  , rid_annot :: Maybe RIdentAnnot
+  { ridPkg :: Maybe String
+  , ridName :: String
+  , ridSrc :: Maybe RSource
+  , ridAnnot :: Maybe RIdentAnnot
   } deriving (Eq, Show, Read)
 
 data RNumeric =
     RNumInt Int
   | RNumNaInt
-  | RNumFloat Float
+  | RNumFloat Double
   | RNumNaFloat
   | RNumComplex (C.Complex Double)
   | RNumNaComplex
