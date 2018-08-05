@@ -1,5 +1,6 @@
 module SimpleR.Interpreter.Stepper.Strict
-  (
+  ( Rule(..)
+  , rulePairs
   ) where
 
 import Data.Maybe
@@ -177,8 +178,16 @@ rule_LambdaAppEnter state = maybeToList $ do
     state { stStack = stackPushList (aFrames ++ [fFrame, cFrame]) cStack2
           , stHeap = heap3 }
 
-rule_LambdaComplete :: State -> [State]
-rule_LambdaComplete state =
+rule_LambdaAppRet :: State -> [State]
+rule_LambdaAppRet state = maybeToList $ do
+  (ReturnSlot mem, _,
+   LambdaBSlot _, cEnvMem,
+   cStack2) <- stackPopV2 $ stStack state
+  let cFrame = mkFrame cEnvMem $ ReturnSlot mem
+  return $ state { stStack = stackPush cFrame cStack2 }
+
+rule_NativeLambdaApp :: State -> [State]
+rule_NativeLambdaApp state =
   case stackPopV $ stStack state of
     Just (EvalSlot (NativeLambdaApp _ _), _, _) -> nativeCall state
     _ -> []
@@ -191,8 +200,8 @@ rule_AssignId state = maybeToList $ do
   let cFrame = mkFrame cEnvMem $ AssignSlot id
   return $ state { stStack = stackPushList [eFrame, cFrame] cStack2 }
 
-rule_AssignString :: State -> [State]
-rule_AssignString state = maybeToList $ do
+rule_AssignStr :: State -> [State]
+rule_AssignStr state = maybeToList $ do
   (EvalSlot (Assign (Const (StringConst str)) expr), cEnvMem, cStack2)
     <- stackPopV $ stStack state
   let cFrame = mkFrame cEnvMem $ EvalSlot $ Assign (Var $ mkId str) expr
@@ -287,8 +296,8 @@ rule_Return state = maybeToList $ do
   let cFrame = mkFrame lEnvMem $ LambdaBSlot funMem
   return $ state { stStack = stackPushList [rFrame, cFrame] fStack }
 
-rule_DiscardReturnSlot :: State -> [State]
-rule_DiscardReturnSlot state = maybeToList $ do
+rule_DiscardRetSlot :: State -> [State]
+rule_DiscardRetSlot state = maybeToList $ do
   (ReturnSlot _, _, cStack2) <- stackPopV $ stStack state
   case stackPopV cStack2 of
     Just (EvalSlot _, _, _) -> return $ state { stStack = cStack2 }
@@ -299,5 +308,68 @@ rule_DiscardReturnSlot state = maybeToList $ do
 rule_Blank :: State -> [State]
 rule_Blank _ = []
 
+--
 
+data Rule =
+    RuleIdent
+  | RuleMemRef
+  | RuleConst
+  | RuleSeq
+  | RuleLambdaAbs
+  | RuleLambdaApp
+  | RuleLambdaAppFun
+  | RuleLambdaAppFunRet
+  | RuleLambdaAppArg
+  | RuleLambdaAppArgRet
+  | RuleLambdaAppEnter
+  | RuleLambdaAppRet
+  | RuleNativeLambdaApp
+  | RuleAssignId
+  | RuleAssignStr
+  | RuleAssignRet
+  | RuleIf
+  | RuleIfRet
+  | RuleIfSym
+  | RuleWhile
+  | RuleWhileTrue
+  | RuleWhileBodyRet
+  | RuleWhileFalse
+  | RuleWhileSym
+  | RuleBreak
+  | RuleNext
+  | RuleReturn
+  | RuleDiscardRetSlot
+  | RuleBlank
+  deriving (Ord, Eq, Show, Read)
+
+rulePairs :: [(Rule, State -> [State])]
+rulePairs =
+  [ (RuleIdent, rule_Ident)
+  , (RuleMemRef, rule_MemRef)
+  , (RuleConst, rule_Const)
+  , (RuleSeq, rule_Seq)
+  , (RuleLambdaAbs, rule_LambdaAbs)
+  , (RuleLambdaAppFun, rule_LambdaAppFun)
+  , (RuleLambdaAppFunRet, rule_LambdaAppFunRet)
+  , (RuleLambdaAppArg, rule_LambdaAppArg)
+  , (RuleLambdaAppArgRet, rule_LambdaAppArgRet)
+  , (RuleLambdaAppEnter, rule_LambdaAppEnter)
+  , (RuleLambdaAppRet, rule_LambdaAppRet)
+  , (RuleNativeLambdaApp, rule_NativeLambdaApp)
+  , (RuleAssignId, rule_AssignId)
+  , (RuleAssignStr, rule_AssignStr)
+  , (RuleAssignRet, rule_AssignRet)
+  , (RuleIf, rule_If)
+  , (RuleIfRet, rule_IfRet)
+  , (RuleIfSym, rule_IfRetSym)
+  , (RuleWhile, rule_While)
+  , (RuleWhileTrue, rule_WhileTrue)
+  , (RuleWhileBodyRet, rule_WhileBodyRet)
+  , (RuleWhileFalse, rule_WhileFalse)
+  , (RuleWhileSym, rule_WhileSym)
+  , (RuleBreak, rule_Break)
+  , (RuleNext, rule_Next)
+  , (RuleReturn, rule_Return)
+  , (RuleDiscardRetSlot, rule_DiscardRetSlot)
+  , (RuleBlank, rule_Blank)]
 
