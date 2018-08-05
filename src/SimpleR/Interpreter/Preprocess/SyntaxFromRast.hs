@@ -10,8 +10,8 @@ import SimpleR.Interpreter.Natives
 class Convert a b where
   convert :: a -> Int -> (b, Int)
 
-idAnonSeeded :: (String, Int) -> (Ident, Int)
-idAnonSeeded (str, int) =
+idAnonSeeded :: String -> Int -> (Ident, Int)
+idAnonSeeded str int =
   let name = str ++ "$p1_" ++ show int in
     (Ident { idName = name, idPkg = Nothing, idAnnot = Nothing },
      int + 1)
@@ -104,12 +104,12 @@ instance Convert RExpr Expr where
   convert (RUnOp runop rexpr) int =
     let (prim, int2) = convert runop int in
     let (expr, int3) = convert rexpr int2 in
-      (LamApp (Var $ idStupidFromRPrim prim) [Arg expr], int3)
+      (lamAppPrim prim [Arg expr], int3)
   convert (RBinOp rbinop rexpr1 rexpr2) int =
     let (prim, int2) = convert rbinop int in
     let (expr1, int3) = convert rexpr1 int2 in
     let (expr2, int4) = convert rexpr2 int3 in
-      (LamApp (Var $ idStupidFromRPrim prim) [Arg expr1, Arg expr2], int4)
+      (lamAppPrim prim [Arg expr1, Arg expr2], int4)
   convert (RFunCall rfun rargs) int =
     let (expr, int2) = convert rfun int in
     let (args, int3) = convertList rargs int2 in
@@ -133,16 +133,49 @@ instance Convert RExpr Expr where
     let (exprc, int2) = convert rexprc int in
     let (exprb, int3) = convert rexprb int2 in
       (While exprc exprb, int3)
-
-
   convert (RRepeat rexpr) int =
     let (expr, int2) = convert rexpr int in
       (While (Const $ BoolConst True) expr, int2)
   convert (RNext) int = (Next, int)
   convert (RBreak) int = (Break, int)
--- convert (RFor rid rexprc rexprb) int =
--- convert (RVecProj rexpr rargs) int =
--- convert (RVecSub rexpr rargs) int =
+  convert (RVecProj rexpr rargs) int =
+    let (expr, int2) = convert rexpr int in
+    let (args, int3) = convertList rargs int2 in
+      (lamAppPrim RPrimVecProj (Arg expr : args), int3)
+  convert (RVecSub rexpr rargs) int =
+    let (expr, int2) = convert rexpr int in
+    let (args, int3) = convertList rargs int2 in
+      (lamAppPrim RPrimVecSub (Arg expr : args), int3)
+  convert (RFor rid rexprc rexprb) int =
+    let (vecId, int2) = idAnonSeeded "vec" int in
+    let (iterId, int3) = idAnonSeeded "iter" int2 in
+    let (highId, int4) = idAnonSeeded "high" int3 in
+    let (elemId, int5) = convert rid int4 in
+    let (exprc, int6) = convert rexprc int5 in
+    let (exprb, int7) = convert rexprb int6 in
+      (Seq
+        [ Assign (Var vecId) exprc
+        , Assign (Var iterId) (Const $ IntConst 1)
+        -- MAY have problems with just calling length this way.
+        , Assign (Var highId) (lamAppPrim RPrimLength [Arg $ Var vecId])
+        , While (lamAppPrim RPrimLe [Arg $ Var iterId, Arg $ Var highId])
+            (Seq [ Assign (Var elemId)
+                          (lamAppPrim RPrimVecProj
+                                      [Arg $ Var vecId, Arg $ Var iterId])
+                 , exprb
+                 , Assign (Var iterId)
+                          (lamAppPrim RPrimPlus
+                              [Arg $ Var iterId, Arg $ Const $ IntConst 1])
+
+            ])
+        ], int7)
+
+lamAppPrim :: RPrim -> [Arg] -> Expr
+lamAppPrim prim args =
+  LamApp (Var $ idStupidFromRPrim prim) args
 
 convertList :: (Convert a b) => [a] -> Int -> ([b], Int)
-convertList = undefined
+convertList as int =
+  foldl (\(acc, i) a -> let (b, i2) = convert a i in (acc ++ [b], i2))
+        ([], int) as
+

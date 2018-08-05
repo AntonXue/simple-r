@@ -115,6 +115,8 @@ data RPrim =
   | RPrimColon
   | RPrimForm
   | RPrimHelp
+  | RPrimVecProj
+  | RPrimVecSub
   deriving (Ord, Eq, Show, Read)
 
 
@@ -223,6 +225,8 @@ primNames =
   , ("<<-", RPrimSuperAssign)
   , ("~", RPrimForm)
   , ("?", RPrimHelp)
+  , ("[[", RPrimVecProj)
+  , ("[", RPrimVecSub)
   ]
 
 rPrimToString :: RPrim -> String
