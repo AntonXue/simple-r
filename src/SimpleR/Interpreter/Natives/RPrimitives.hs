@@ -10,7 +10,7 @@ import Data.Maybe
 
 mkRPrimId :: String -> Ident
 mkRPrimId str =
-  Ident { idName = str, idPkg = Just "prim", idAnnot = IdentAnnot }
+  Ident { idName = str, idPkg = Just "prim", idAnnot = Nothing }
 
 data RPrim =
     RPrimAnyNa
@@ -235,11 +235,11 @@ rPrimToString prim =
 idFromRPrim :: RPrim -> Ident
 idFromRPrim prim =
   let name = rPrimToString prim in
-    Ident { idName = name, idPkg = Just "prim", idAnnot = IdentAnnot }
+    Ident { idName = name, idPkg = Just "prim", idAnnot = Nothing }
 
 idStupidFromRPrim :: RPrim -> Ident
 idStupidFromRPrim prim =
   let name = rPrimToString prim in
-    Ident { idName = name, idPkg = Nothing, idAnnot = IdentAnnot }
+    Ident { idName = name, idPkg = Nothing, idAnnot = Nothing }
 
 

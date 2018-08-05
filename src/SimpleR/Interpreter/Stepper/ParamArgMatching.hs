@@ -3,7 +3,6 @@ module SimpleR.Interpreter.Stepper.ParamArgMatching where
 import SimpleR.Language
 import SimpleR.Interpreter.Commons
 
-
 -- Extract default (Ident, Expr) bindings from a [Param]
 bindsOfDefaults :: [Param] -> [(Ident, Expr)]
 bindsOfDefaults [] = []
@@ -115,19 +114,15 @@ positionalMatch ((Default pId _) : params) (arg : args) =
         ((pId, Left mem) : binds, vars)
 
 matchLamApp ::
-  [Param] ->
-  [(Arg, MemRef)] ->
-  Env ->
-  Heap ->
+  [Param] -> [(Arg, MemRef)] -> Env -> Heap ->
     Maybe ([(Ident, Either MemRef Expr)],
            [Either MemRef (Ident, MemRef)])
 matchLamApp params args env heap = do
-    pulled <- pullArgs args heap
-    let acc = (params, [], [])
-    let (remParams, remArgs, namedArgs) = foldl defMatchFoldL acc pulled
-    let (matched, vars) = positionalMatch remParams remArgs
-    let binds = map (\(i, m) -> (i, Left m)) namedArgs
-    return (binds, vars)
-    
+  pulled <- pullArgs args heap
+  let acc = (params, [], [])
+  let (remParams, remArgs, namedArgs) = foldl defMatchFoldL acc pulled
+  let (matched, vars) = positionalMatch remParams remArgs
+  let binds = map (\(i, m) -> (i, Left m)) namedArgs
+  return (binds, vars)
 
 

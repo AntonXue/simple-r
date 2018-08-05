@@ -7,9 +7,9 @@ type Complex = C.Complex Double
 data IdentAnnot = IdentAnnot deriving (Ord, Eq, Show, Read)
 
 data Ident = Ident
-  { idPkg :: Maybe String
-  , idName :: String
-  , idAnnot :: IdentAnnot
+  { idName :: String
+  , idPkg :: Maybe String
+  , idAnnot :: Maybe IdentAnnot
   } deriving (Ord, Eq, Show, Read)
 
 data TickAnnot = TickAnnot deriving (Eq, Show, Read)

@@ -22,5 +22,5 @@ idDefault = idFromString ""
 
 idFromString :: String -> Ident
 idFromString str =
-  Ident { idName = str, idPkg = Nothing, idAnnot = defaultIdAnnot }
+  Ident { idName = str, idPkg = Nothing, idAnnot = Nothing }
 
