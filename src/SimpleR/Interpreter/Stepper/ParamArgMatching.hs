@@ -14,7 +14,7 @@ bindsOfDefaults ((Default id expr) : ps) = (id, expr) : bindsOfDefaults ps
 -- Linearize the arguments into a [Either MemRef (Ident, MemRef)] if possible.
 -- Flattens the variadics.
 pullArgs :: [(Arg, MemRef)] -> Heap -> Maybe [Either MemRef (Ident, MemRef)]
-pullArgs [] _ = return []
+pullArgs [] _ = Just []
 pullArgs (arg : args) heap = do
   args2 <- pullArgs args heap
   case arg of
@@ -26,8 +26,10 @@ pullArgs (arg : args) heap = do
       (DataObj (VecVal (StringVec nameStrs)) _) <- heapLookup nameMem heap
       if length nameStrs == length varMems then
         let strMemPairs = zip nameStrs varMems in
-        let idMemPairs = map (\(n, m) -> if n == ""
-                           then Left m else Right (mkId n, m)) strMemPairs in
+        let idMemPairs =
+              map (\(n, m) -> if n == ""
+                    then Left m
+                    else Right (idFromString n, m)) strMemPairs in
           return $ idMemPairs ++ args2
       else
         Nothing
@@ -112,20 +114,20 @@ positionalMatch ((Default pId _) : params) (arg : args) =
       let (binds, vars) = positionalMatch params args in
         ((pId, Left mem) : binds, vars)
 
-matchLambdaApp ::
+matchLamApp ::
   [Param] ->
   [(Arg, MemRef)] ->
   Env ->
   Heap ->
     Maybe ([(Ident, Either MemRef Expr)],
            [Either MemRef (Ident, MemRef)])
-matchLambdaApp params args env heap = do
+matchLamApp params args env heap = do
     pulled <- pullArgs args heap
     let acc = (params, [], [])
     let (remParams, remArgs, namedArgs) = foldl defMatchFoldL acc pulled
     let (matched, vars) = positionalMatch remParams remArgs
     let binds = map (\(i, m) -> (i, Left m)) namedArgs
-    return (binds , vars)
+    return (binds, vars)
     
 
 

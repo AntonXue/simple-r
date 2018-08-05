@@ -49,9 +49,9 @@ data Expr =
   | Mem MemRef
   | Const Const
   | Seq [Expr]
-  | LambdaAbs [Param] Expr
-  | LambdaApp Expr [Arg]
-  | NativeLambdaApp Ident [Arg]
+  | LamAbs [Param] Expr
+  | LamApp Expr [Arg]
+  | NativeLamApp Ident [Arg]
   | Return Expr
   | Assign Expr Expr
   | SuperAssign Expr Expr

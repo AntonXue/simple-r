@@ -1,207 +1,245 @@
 module SimpleR.Interpreter.Natives.RPrimitives
-  (
+  ( RPrim (..)
+  , rPrimToString
+  , idFromRPrim
+  , idStupidFromRPrim
   ) where
 
 import SimpleR.Language
+import Data.Maybe
 
-mkPrimId :: String -> Ident
-mkPrimId str =
+mkRPrimId :: String -> Ident
+mkRPrimId str =
   Ident { idName = str, idPkg = Just "prim", idAnnot = IdentAnnot }
 
 data RPrim =
-    PrimAnyNa
-  | PrimAsCharacter
-  | PrimAsComplex
-  | PrimAsDouble
-  | PrimAsEnvironment
-  | PrimAsInteger
-  | PrimAsLogical
-  | PrimAsCall
-  | PrimAsNumeric
-  | PrimAsRaw
-  | PrimC
-  | PrimDim
-  | PrimDimArrow
-  | PrimDimNames
-  | PrimDimNamesAssign
-  | PrimIsArray
-  | PrimIsFinite
-  | PrimIsInfinite
-  | PrimIsMatrix
-  | PrimIsNa
-  | PrimIsNan
-  | PrimIsNumeric
-  | PrimLength
-  | PrimLengthAssign
-  | PrimLevelsAssign
-  | PrimNames
-  | PrimNamesAssign
-  | PrimRep
-  | PrimSeqInt
-  | PrimXtfrm
+    RPrimAnyNa
+  | RPrimAsCharacter
+  | RPrimAsComplex
+  | RPrimAsDouble
+  | RPrimAsEnvironment
+  | RPrimAsInteger
+  | RPrimAsLogical
+  | RPrimAsCall
+  | RPrimAsNumeric
+  | RPrimAsRaw
+  | RPrimC
+  | RPrimDim
+  | RPrimDimArrow
+  | RPrimDimNames
+  | RPrimDimNamesAssign
+  | RPrimIsArray
+  | RPrimIsFinite
+  | RPrimIsInfinite
+  | RPrimIsMatrix
+  | RPrimIsNa
+  | RPrimIsNan
+  | RPrimIsNumeric
+  | RPrimLength
+  | RPrimLengthAssign
+  | RPrimLevelsAssign
+  | RPrimNames
+  | RPrimNamesAssign
+  | RPrimRep
+  | RPrimSeqInt
+  | RPrimXtfrm
 
-  | PrimAbs
-  | PrimSign
-  | PrimSqrt
-  | PrimFloor
-  | PrimCeiling
-  | PrimExp
-  | PrimExpm1
-  | PrimLog1p
-  | PrimLog10
-  | PrimLog2
-  | PrimCos
-  | PrimSin
-  | PrimTan
-  | PrimAcos
-  | PrimAsin
-  | PrimAtan
-  | PrimCosh
-  | PrimSinh
-  | PrimTanh
-  | PrimAcosh
-  | PrimAsinh
-  | PrimAtanh
-  | PrimCosPi
-  | PrimSinPi
-  | PrimTanPi
-  | PrimGamma
-  | PrimLGamma
-  | PrimDiGamma
-  | PrimTriGamma
-  | PrimCumSum
-  | PrimCumProd
-  | PrimCumMax
-  | PrimCumMin
+  | RPrimAbs
+  | RPrimSign
+  | RPrimSqrt
+  | RPrimFloor
+  | RPrimCeiling
+  | RPrimExp
+  | RPrimExpm1
+  | RPrimLog1p
+  | RPrimLog10
+  | RPrimLog2
+  | RPrimCos
+  | RPrimSin
+  | RPrimTan
+  | RPrimAcos
+  | RPrimAsin
+  | RPrimAtan
+  | RPrimCosh
+  | RPrimSinh
+  | RPrimTanh
+  | RPrimAcosh
+  | RPrimAsinh
+  | RPrimAtanh
+  | RPrimCosPi
+  | RPrimSinPi
+  | RPrimTanPi
+  | RPrimGamma
+  | RPrimLGamma
+  | RPrimDiGamma
+  | RPrimTriGamma
+  | RPrimCumSum
+  | RPrimCumProd
+  | RPrimCumMax
+  | RPrimCumMin
 
-  | PrimPlus
-  | PrimMinus
-  | PrimMult
-  | PrimDiv
-  | PrimPow
-  | PrimMod
-  | PrimIntDiv
-  | PrimAnd
-  | PrimOr
-  | PrimEq
-  | PrimNeq
-  | PrimLt
-  | PrimLe
-  | PrimGe
-  | PrimGt
+  | RPrimPlus
+  | RPrimMinus
+  | RPrimMult
+  | RPrimDiv
+  | RPrimPow
+  | RPrimMod
+  | RPrimIntDiv
+  | RPrimAnd
+  | RPrimOr
+  | RPrimEq
+  | RPrimNeq
+  | RPrimLt
+  | RPrimLe
+  | RPrimGe
+  | RPrimGt
 
-  | PrimAll
-  | PrimAny
-  | PrimSum
-  | PrimProd
-  | PrimMax
-  | PrimMin
-  | PrimRange
+  | RPrimAll
+  | RPrimAny
+  | RPrimSum
+  | RPrimProd
+  | RPrimMax
+  | RPrimMin
+  | RPrimRange
 
-  | PrimArg
-  | PrimConj
-  | PrimIm
-  | PrimModulus
-  | PrimReal
+  | RPrimArg
+  | RPrimConj
+  | RPrimIm
+  | RPrimModulus
+  | RPrimReal
+
+  -- Extras that we add
+  | RPrimNot
+  | RPrimAssign
+  | RPrimSuperAssign
+  | RPrimColon
+  | RPrimForm
+  | RPrimHelp
   deriving (Ord, Eq, Show, Read)
 
 
 -- https://github.com/wch/r-source/blob/a6d3738aeb73c748f27a94a2c97bb5750c6e01bf/src/library/base/R/zzz.R#L150-#L210
 primNames :: [(String, RPrim)]
 primNames =
-  [ ("anyNA", PrimAnyNa)
-  , ("as.character", PrimAsCharacter)
-  , ("as.complex", PrimAsComplex)
-  , ("as.double", PrimAsDouble)
-  , ("as.environment", PrimAsEnvironment)
-  , ("as.integer", PrimAsInteger)
-  , ("as.logical", PrimAsLogical)
-  , ("as.call", PrimAsCall)
-  , ("as.numeric", PrimAsNumeric)
-  , ("as.raw", PrimAsRaw)
-  , ("c", PrimC)
-  , ("dim", PrimDim)
-  , ("dim<-", PrimDimArrow)
-  , ("dimnames", PrimDimNames)
-  , ("dimnames<-", PrimDimNamesAssign)
-  , ("is.array", PrimIsArray)
-  , ("is.finite", PrimIsFinite)
-  , ("is.infinite", PrimIsInfinite)
-  , ("is.matrix", PrimIsMatrix)
-  , ("is.na", PrimIsNa)
-  , ("is.nan", PrimIsNan)
-  , ("is.numeric", PrimIsNumeric)
-  , ("length", PrimLength)
-  , ("length<-", PrimLengthAssign)
-  , ("levels<-", PrimLevelsAssign)
-  , ("names", PrimNames)
-  , ("names<-", PrimNamesAssign)
-  , ("rep", PrimRep)
-  , ("seq.int", PrimSeqInt)
-  , ("xtfrm", PrimXtfrm)
+  [ ("anyNA", RPrimAnyNa)
+  , ("as.character", RPrimAsCharacter)
+  , ("as.complex", RPrimAsComplex)
+  , ("as.double", RPrimAsDouble)
+  , ("as.environment", RPrimAsEnvironment)
+  , ("as.integer", RPrimAsInteger)
+  , ("as.logical", RPrimAsLogical)
+  , ("as.call", RPrimAsCall)
+  , ("as.numeric", RPrimAsNumeric)
+  , ("as.raw", RPrimAsRaw)
+  , ("c", RPrimC)
+  , ("dim", RPrimDim)
+  , ("dim<-", RPrimDimArrow)
+  , ("dimnames", RPrimDimNames)
+  , ("dimnames<-", RPrimDimNamesAssign)
+  , ("is.array", RPrimIsArray)
+  , ("is.finite", RPrimIsFinite)
+  , ("is.infinite", RPrimIsInfinite)
+  , ("is.matrix", RPrimIsMatrix)
+  , ("is.na", RPrimIsNa)
+  , ("is.nan", RPrimIsNan)
+  , ("is.numeric", RPrimIsNumeric)
+  , ("length", RPrimLength)
+  , ("length<-", RPrimLengthAssign)
+  , ("levels<-", RPrimLevelsAssign)
+  , ("names", RPrimNames)
+  , ("names<-", RPrimNamesAssign)
+  , ("rep", RPrimRep)
+  , ("seq.int", RPrimSeqInt)
+  , ("xtfrm", RPrimXtfrm)
 
-  , ("abs", PrimAbs)
-  , ("sign", PrimSign)
-  , ("sqrt", PrimSqrt)
-  , ("floor", PrimFloor)
-  , ("ceiling", PrimCeiling)
-  , ("exp", PrimExp)
-  , ("expm1", PrimExpm1)
-  , ("log1p", PrimLog1p)
-  , ("log10", PrimLog10)
-  , ("log2", PrimLog2)
-  , ("cos", PrimCos)
-  , ("sin", PrimSin)
-  , ("tan", PrimTan)
-  , ("acos", PrimAcos)
-  , ("asin", PrimAsin)
-  , ("atan", PrimAtan)
-  , ("cosh", PrimCosh)
-  , ("sinh", PrimSinh)
-  , ("tanh", PrimTanh)
-  , ("acosh", PrimAcosh)
-  , ("asinh", PrimAsinh)
-  , ("atanh", PrimAtanh)
-  , ("cospi", PrimCosPi)
-  , ("sinpi", PrimSinPi)
-  , ("tanpi", PrimTanPi)
-  , ("gamma", PrimGamma)
-  , ("lgamma", PrimLGamma)
-  , ("digamma", PrimDiGamma)
-  , ("trigamma", PrimTriGamma)
-  , ("cumsum", PrimCumSum)
-  , ("cumprod", PrimCumProd)
-  , ("cummax", PrimCumMax)
-  , ("cummin", PrimCumMin)
+  , ("abs", RPrimAbs)
+  , ("sign", RPrimSign)
+  , ("sqrt", RPrimSqrt)
+  , ("floor", RPrimFloor)
+  , ("ceiling", RPrimCeiling)
+  , ("exp", RPrimExp)
+  , ("expm1", RPrimExpm1)
+  , ("log1p", RPrimLog1p)
+  , ("log10", RPrimLog10)
+  , ("log2", RPrimLog2)
+  , ("cos", RPrimCos)
+  , ("sin", RPrimSin)
+  , ("tan", RPrimTan)
+  , ("acos", RPrimAcos)
+  , ("asin", RPrimAsin)
+  , ("atan", RPrimAtan)
+  , ("cosh", RPrimCosh)
+  , ("sinh", RPrimSinh)
+  , ("tanh", RPrimTanh)
+  , ("acosh", RPrimAcosh)
+  , ("asinh", RPrimAsinh)
+  , ("atanh", RPrimAtanh)
+  , ("cospi", RPrimCosPi)
+  , ("sinpi", RPrimSinPi)
+  , ("tanpi", RPrimTanPi)
+  , ("gamma", RPrimGamma)
+  , ("lgamma", RPrimLGamma)
+  , ("digamma", RPrimDiGamma)
+  , ("trigamma", RPrimTriGamma)
+  , ("cumsum", RPrimCumSum)
+  , ("cumprod", RPrimCumProd)
+  , ("cummax", RPrimCumMax)
+  , ("cummin", RPrimCumMin)
 
-  , ("+", PrimPlus)
-  , ("-", PrimMinus)
-  , ("*", PrimMult)
-  , ("/", PrimDiv)
-  , ("^", PrimPow)
-  , ("%%", PrimMod)
-  , ("%/%", PrimIntDiv)
-  , ("&", PrimAnd)
-  , ("|", PrimOr)
-  , ("==", PrimEq)
-  , ("!=", PrimNeq)
-  , ("<", PrimLt)
-  , ("<=", PrimLe)
-  , (">=", PrimGe)
-  , (">", PrimGt)
+  , ("+", RPrimPlus)
+  , ("-", RPrimMinus)
+  , ("*", RPrimMult)
+  , ("/", RPrimDiv)
+  , ("^", RPrimPow)
+  , ("%%", RPrimMod)
+  , ("%/%", RPrimIntDiv)
+  , ("&", RPrimAnd)
+  , ("|", RPrimOr)
+  , ("==", RPrimEq)
+  , ("!=", RPrimNeq)
+  , ("<", RPrimLt)
+  , ("<=", RPrimLe)
+  , (">=", RPrimGe)
+  , (">", RPrimGt)
 
-  , ("all", PrimAll)
-  , ("any", PrimAny)
-  , ("sum", PrimSum)
-  , ("prod", PrimProd)
-  , ("max", PrimMax)
-  , ("min", PrimMin)
-  , ("range", PrimRange)
+  , ("all", RPrimAll)
+  , ("any", RPrimAny)
+  , ("sum", RPrimSum)
+  , ("prod", RPrimProd)
+  , ("max", RPrimMax)
+  , ("min", RPrimMin)
+  , ("range", RPrimRange)
 
-  , ("Arg", PrimArg)
-  , ("Conj", PrimConj)
-  , ("Im", PrimIm)
-  , ("Mod", PrimModulus)
-  , ("Re", PrimReal)
+  , ("Arg", RPrimArg)
+  , ("Conj", RPrimConj)
+  , ("Im", RPrimIm)
+  , ("Mod", RPrimModulus)
+  , ("Re", RPrimReal)
+
+  -- Things that were not explicitly included but nice for smooth translation.
+  , ("!", RPrimNot)
+  , (":", RPrimColon)
+  , ("<-", RPrimAssign)
+  , ("<<-", RPrimSuperAssign)
+  , ("~", RPrimForm)
+  , ("?", RPrimHelp)
   ]
+
+rPrimToString :: RPrim -> String
+rPrimToString prim =
+  case map fst $ filter ((== prim) . snd) primNames of
+    [] -> error $ "rPrimToString: failed to account for " ++ show prim
+    (str : []) -> str
+    (_ : _) -> error $ "rPrimToString: too many matches for " ++ show prim
+
+idFromRPrim :: RPrim -> Ident
+idFromRPrim prim =
+  let name = rPrimToString prim in
+    Ident { idName = name, idPkg = Just "prim", idAnnot = IdentAnnot }
+
+idStupidFromRPrim :: RPrim -> Ident
+idStupidFromRPrim prim =
+  let name = rPrimToString prim in
+    Ident { idName = name, idPkg = Nothing, idAnnot = IdentAnnot }
+
 

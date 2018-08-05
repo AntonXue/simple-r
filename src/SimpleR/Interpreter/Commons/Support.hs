@@ -71,8 +71,8 @@ data Slot =
 
   | AssignSlot Ident
   | SupAssignSlot Ident
-  | LambdaASlot (Maybe MemRef) [(Arg, MemRef)] (Maybe Arg) [Arg]
-  | LambdaBSlot MemRef
+  | LamASlot (Maybe MemRef) [(Arg, MemRef)] (Maybe Arg) [Arg]
+  | LamBSlot MemRef
 
   | UpdateSlot MemRef
   | ArgSlot [Arg]

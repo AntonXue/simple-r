@@ -1,5 +1,8 @@
 module Lib
-    ( someFunc
+    ( module SimpleR.Language
+    , module SimpleR.Interpreter
+    , module SimpleR.Smt
+    , module SimpleR.R
     ) where
 
 import SimpleR.Language

@@ -70,12 +70,12 @@ unwindToLoopSlot stack = do
     LoopSlot cond body loop -> return ((cond, body, loop), lEnvMem, stack2)
     _ -> unwindToLoopSlot stack2
 
-unwindToLambdaBSlot :: Stack -> Maybe (MemRef, MemRef, Stack)
-unwindToLambdaBSlot stack = do
+unwindToLamBSlot :: Stack -> Maybe (MemRef, MemRef, Stack)
+unwindToLamBSlot stack = do
   (slot, lEnvMem, stack2) <- stackPopV stack
   case slot of
-    LambdaBSlot funMem -> return (funMem, lEnvMem, stack2)
-    _ -> unwindToLambdaBSlot stack2
+    LamBSlot funMem -> return (funMem, lEnvMem, stack2)
+    _ -> unwindToLamBSlot stack2
 
 
 
@@ -85,126 +85,126 @@ rule_Ident :: State -> [State]
 rule_Ident state = maybeToList $ do
   (EvalSlot (Var id), cEnvMem, cStack2) <- stackPopV $ stStack state
   let mem = fromMaybe memNull (heapEnvLookup cEnvMem id (stHeap state))
-  let cFrame = mkFrame cEnvMem $ ReturnSlot mem
+  let cFrame = frameMk cEnvMem $ ReturnSlot mem
   return $ state { stStack = stackPush cFrame cStack2 }
 
 rule_MemRef :: State -> [State]
 rule_MemRef state = maybeToList $ do
   (EvalSlot (Mem mem), cEnvMem, cStack2) <- stackPopV $ stStack state
-  let cFrame = mkFrame cEnvMem $ ReturnSlot mem
+  let cFrame = frameMk cEnvMem $ ReturnSlot mem
   return $ state { stStack = stackPush cFrame cStack2 }
 
 rule_Const :: State -> [State]
 rule_Const state = maybeToList $ do
   (EvalSlot (Const const), cEnvMem, cStack2) <- stackPopV $ stStack state
   let (mem, heap2) = heapAllocConst const $ stHeap state
-  let cFrame = mkFrame cEnvMem $ ReturnSlot mem
+  let cFrame = frameMk cEnvMem $ ReturnSlot mem
   return $ state { stStack = stackPush cFrame cStack2
                  , stHeap = heap2 }
 
 rule_Seq :: State -> [State]
 rule_Seq state = maybeToList $ do
   (EvalSlot (Seq exprs), cEnvMem, cStack2) <- stackPopV $ stStack state
-  let cFrames = map (mkFrame cEnvMem . EvalSlot) exprs
+  let cFrames = map (frameMk cEnvMem . EvalSlot) exprs
   return $ state { stStack = stackPushList cFrames cStack2 }
 
-rule_LambdaAbs :: State -> [State]
-rule_LambdaAbs state = maybeToList $ do
-  (EvalSlot (LambdaAbs params expr), cEnvMem, cStack2)
+rule_LamAbs :: State -> [State]
+rule_LamAbs state = maybeToList $ do
+  (EvalSlot (LamAbs params expr), cEnvMem, cStack2)
     <- stackPopV $ stStack state
   let fEnv = envAssignPred cEnvMem envEmpty
   let fEnvObj = DataObj (EnvVal fEnv) attrsEmpty
   let (fEnvMem, heap2) = heapAlloc fEnvObj $ stHeap state
   let funObj = DataObj (FunVal fEnvMem params expr) attrsEmpty
   let (funMem, heap3) = heapAlloc funObj heap2
-  let cFrame = mkFrame cEnvMem $ ReturnSlot funMem
+  let cFrame = frameMk cEnvMem $ ReturnSlot funMem
   return $ state { stHeap = heap3
                  , stStack = stackPush cFrame cStack2 }
 
-rule_LambdaAppFun :: State -> [State]
-rule_LambdaAppFun state = maybeToList $ do
-  (EvalSlot (LambdaApp fun args), cEnvMem, cStack2)
+rule_LamAppFun :: State -> [State]
+rule_LamAppFun state = maybeToList $ do
+  (EvalSlot (LamApp fun args), cEnvMem, cStack2)
     <- stackPopV $ stStack state
-  let fFrame = mkFrame cEnvMem $ EvalSlot fun
-  let cFrame = mkFrame cEnvMem $ LambdaASlot Nothing [] Nothing args
+  let fFrame = frameMk cEnvMem $ EvalSlot fun
+  let cFrame = frameMk cEnvMem $ LamASlot Nothing [] Nothing args
   return $ state { stStack = stackPushList [fFrame, cFrame] cStack2 }
 
-rule_LambdaAppFunRet :: State -> [State]
-rule_LambdaAppFunRet state = maybeToList $ do
+rule_LamAppFunRet :: State -> [State]
+rule_LamAppFunRet state = maybeToList $ do
   (ReturnSlot funMem, _,
-   LambdaASlot Nothing [] Nothing args, cEnvMem,
+   LamASlot Nothing [] Nothing args, cEnvMem,
    cStack2) <- stackPopV2 $ stStack state
-  let lamASlot = LambdaASlot (Just funMem) [] Nothing args
-  let cFrame = mkFrame cEnvMem lamASlot
+  let lamASlot = LamASlot (Just funMem) [] Nothing args
+  let cFrame = frameMk cEnvMem lamASlot
   return $ state { stStack = stackPush cFrame cStack2 }
 
-rule_LambdaAppArg :: State -> [State]
-rule_LambdaAppArg state = maybeToList $ do
-  (LambdaASlot (Just funMem) dones Nothing (arg : args),
+rule_LamAppArg :: State -> [State]
+rule_LamAppArg state = maybeToList $ do
+  (LamASlot (Just funMem) dones Nothing (arg : args),
    cEnvMem, cStack2) <- stackPopV $ stStack state
-  let aFrame = mkFrame cEnvMem $ EvalSlot $ exprFromArg arg
-  let lamASlot = LambdaASlot (Just funMem) dones (Just arg) args
-  let cFrame = mkFrame cEnvMem lamASlot
+  let aFrame = frameMk cEnvMem $ EvalSlot $ exprFromArg arg
+  let lamASlot = LamASlot (Just funMem) dones (Just arg) args
+  let cFrame = frameMk cEnvMem lamASlot
   return $ state { stStack = stackPushList [aFrame, cFrame] cStack2}
 
-rule_LambdaAppArgRet :: State -> [State]
-rule_LambdaAppArgRet state = maybeToList $ do
+rule_LamAppArgRet :: State -> [State]
+rule_LamAppArgRet state = maybeToList $ do
   (ReturnSlot argMem, _,
-   LambdaASlot (Just funMem) dones (Just arg) args, cEnvMem,
+   LamASlot (Just funMem) dones (Just arg) args, cEnvMem,
    cStack2) <- stackPopV2 $ stStack state
   let dones2 = dones ++ [(arg, argMem)]
-  let lamASlot = LambdaASlot (Just funMem) dones2 Nothing args
-  let cFrame = mkFrame cEnvMem lamASlot
+  let lamASlot = LamASlot (Just funMem) dones2 Nothing args
+  let cFrame = frameMk cEnvMem lamASlot
   return $ state { stStack = stackPush cFrame cStack2 }
 
-rule_LambdaAppEnter :: State -> [State]
-rule_LambdaAppEnter state = maybeToList $ do
-  (LambdaASlot (Just funMem) dones Nothing [], cEnvMem, cStack2)
+rule_LamAppEnter :: State -> [State]
+rule_LamAppEnter state = maybeToList $ do
+  (LamASlot (Just funMem) dones Nothing [], cEnvMem, cStack2)
     <- stackPopV $ stStack state
   -- Get out the things in the heap
   DataObj (FunVal fEnvMem params body) _ <- heapLookup funMem $ stHeap state
   DataObj (EnvVal cEnv) _ <- heapLookup cEnvMem $ stHeap state
-  (binds, vars) <- matchLambdaApp params dones cEnv $ stHeap state
+  (binds, vars) <- matchLamApp params dones cEnv $ stHeap state
   -- Bind the variadic sand memBinds first
   let (memBinds, exprBinds) = splitBinds binds
   (_, heap2) <- liftVariadics vars fEnvMem $ stHeap state
   heap3 <- heapEnvInsertList fEnvMem memBinds heap2
   -- Now add the expression bindings before the body thing
   let aFrames = map (\(id, expr) ->
-                 mkFrame fEnvMem $ EvalSlot $ Assign (Var id) expr) exprBinds
-  let fFrame = mkFrame fEnvMem $ EvalSlot body
-  let cFrame = mkFrame cEnvMem $ LambdaBSlot funMem
+                 frameMk fEnvMem $ EvalSlot $ Assign (Var id) expr) exprBinds
+  let fFrame = frameMk fEnvMem $ EvalSlot body
+  let cFrame = frameMk cEnvMem $ LamBSlot funMem
   return $
     state { stStack = stackPushList (aFrames ++ [fFrame, cFrame]) cStack2
           , stHeap = heap3 }
 
-rule_LambdaAppRet :: State -> [State]
-rule_LambdaAppRet state = maybeToList $ do
+rule_LamAppRet :: State -> [State]
+rule_LamAppRet state = maybeToList $ do
   (ReturnSlot mem, _,
-   LambdaBSlot _, cEnvMem,
+   LamBSlot _, cEnvMem,
    cStack2) <- stackPopV2 $ stStack state
-  let cFrame = mkFrame cEnvMem $ ReturnSlot mem
+  let cFrame = frameMk cEnvMem $ ReturnSlot mem
   return $ state { stStack = stackPush cFrame cStack2 }
 
-rule_NativeLambdaApp :: State -> [State]
-rule_NativeLambdaApp state =
+rule_NativeLamApp :: State -> [State]
+rule_NativeLamApp state =
   case stackPopV $ stStack state of
-    Just (EvalSlot (NativeLambdaApp _ _), _, _) -> nativeCall state
+    Just (EvalSlot (NativeLamApp _ _), _, _) -> nativeCall state
     _ -> []
 
 rule_AssignId :: State -> [State]
 rule_AssignId state = maybeToList $ do
   (EvalSlot (Assign (Var id) expr), cEnvMem, cStack2)
     <- stackPopV $ stStack state
-  let eFrame = mkFrame cEnvMem $ EvalSlot expr
-  let cFrame = mkFrame cEnvMem $ AssignSlot id
+  let eFrame = frameMk cEnvMem $ EvalSlot expr
+  let cFrame = frameMk cEnvMem $ AssignSlot id
   return $ state { stStack = stackPushList [eFrame, cFrame] cStack2 }
 
 rule_AssignStr :: State -> [State]
 rule_AssignStr state = maybeToList $ do
-  (EvalSlot (Assign (Const (StringConst str)) expr), cEnvMem, cStack2)
+  (EvalSlot (Assign (Const (StringConst str)) e), cEnvMem, cStack2)
     <- stackPopV $ stStack state
-  let cFrame = mkFrame cEnvMem $ EvalSlot $ Assign (Var $ mkId str) expr
+  let cFrame = frameMk cEnvMem $ EvalSlot $ Assign (Var $ idFromString str) e
   return $ state { stStack = stackPush cFrame cStack2 }
 
 rule_AssignRet :: State -> [State]
@@ -212,7 +212,7 @@ rule_AssignRet state = maybeToList $ do
   (ReturnSlot mem, _, AssignSlot id, cEnvMem, cStack2)
     <- stackPopV2 $ stStack state
   heap2 <- heapEnvInsert cEnvMem id mem $ stHeap state
-  let cFrame = mkFrame cEnvMem $ ReturnSlot mem
+  let cFrame = frameMk cEnvMem $ ReturnSlot mem
   return $ state { stHeap = heap2
                  , stStack = stackPush cFrame cStack2 }
 
@@ -220,8 +220,8 @@ rule_If :: State -> [State]
 rule_If state = maybeToList $ do
   (EvalSlot (If cond true false), cEnvMem, cStack2)
     <- stackPopV $ stStack state
-  let aFrame = mkFrame cEnvMem $ EvalSlot cond
-  let cFrame = mkFrame cEnvMem $ BranchSlot true false
+  let aFrame = frameMk cEnvMem $ EvalSlot cond
+  let cFrame = frameMk cEnvMem $ BranchSlot true false
   return $ state { stStack = stackPushList [aFrame, cFrame] cStack2 }
 
 rule_IfRet :: State -> [State]
@@ -230,7 +230,7 @@ rule_IfRet state = maybeToList $ do
    BranchSlot true false, cEnvMem,
    cStack2) <- stackPopV2 $ stStack state
   let branch = if isMemConcTrue condMem $ stHeap state then true else false
-  let cFrame = mkFrame cEnvMem $ EvalSlot branch
+  let cFrame = frameMk cEnvMem $ EvalSlot branch
   return $ state { stStack = stackPush cFrame cStack2 }
 
 rule_IfRetSym :: State -> [State]
@@ -239,8 +239,8 @@ rule_IfRetSym state = undefined
 rule_While :: State -> [State]
 rule_While state = maybeToList $ do
   (EvalSlot (While cond body), cEnvMem, cStack2) <- stackPopV $ stStack state
-  let dFrame = mkFrame cEnvMem $ EvalSlot cond
-  let cFrame = mkFrame cEnvMem $ LoopSlot cond body LoopStateCond
+  let dFrame = frameMk cEnvMem $ EvalSlot cond
+  let cFrame = frameMk cEnvMem $ LoopSlot cond body LoopStateCond
   return $ state { stStack = stackPushList [dFrame, cFrame] cStack2 }
 
 rule_WhileTrue :: State -> [State]
@@ -248,9 +248,9 @@ rule_WhileTrue state = maybeToList $ do
   (ReturnSlot condMem, _,
    LoopSlot cond body LoopStateCond, cEnvMem,
    cStack2) <- stackPopV2 $ stStack state
-  _ <- if isMemConcTrue condMem $ stHeap state then return True else Nothing
-  let bFrame = mkFrame cEnvMem $ EvalSlot body
-  let cFrame = mkFrame cEnvMem $ LoopSlot cond body LoopStateBody
+  _ <- if isMemConcTrue condMem $ stHeap state then Just True else Nothing
+  let bFrame = frameMk cEnvMem $ EvalSlot body
+  let cFrame = frameMk cEnvMem $ LoopSlot cond body LoopStateBody
   return $ state { stStack = stackPushList [bFrame, cFrame] cStack2 }
 
 rule_WhileBodyRet :: State -> [State]
@@ -258,8 +258,8 @@ rule_WhileBodyRet state = maybeToList $ do
   (ReturnSlot _, _,
    LoopSlot cond body LoopStateBody, cEnvMem,
    cStack2) <- stackPopV2 $ stStack state
-  let dFrame = mkFrame cEnvMem $ EvalSlot cond
-  let cFrame = mkFrame cEnvMem $ LoopSlot cond body LoopStateCond
+  let dFrame = frameMk cEnvMem $ EvalSlot cond
+  let cFrame = frameMk cEnvMem $ LoopSlot cond body LoopStateCond
   return $ state { stStack = stackPushList [dFrame, cFrame] cStack2 }
 
 rule_WhileFalse :: State -> [State]
@@ -267,7 +267,7 @@ rule_WhileFalse state = maybeToList $ do
   (ReturnSlot condMem, _,
    LoopSlot cond body LoopStateCond, cEnvMem,
    cStack2) <- stackPopV2 $ stStack state
-  let cFrame = mkFrame cEnvMem $ ReturnSlot memNull
+  let cFrame = frameMk cEnvMem $ ReturnSlot memNull
   return $ state { stStack = stackPush cFrame cStack2 }
 
 rule_WhileSym :: State -> [State]
@@ -277,23 +277,23 @@ rule_Break :: State -> [State]
 rule_Break state = maybeToList $ do
   (EvalSlot Break, _, cStack2) <- stackPopV $ stStack state
   ((cond, body, _), lEnvMem, lStack) <- unwindToLoopSlot cStack2
-  let cFrame = mkFrame lEnvMem $ ReturnSlot memNull
+  let cFrame = frameMk lEnvMem $ ReturnSlot memNull
   return $ state { stStack = stackPush cFrame cStack2 }
 
 rule_Next :: State -> [State]
 rule_Next state = maybeToList $ do
   (EvalSlot Next, _, cStack2) <- stackPopV $ stStack state
   ((cond, body, _), lEnvMem, lStack) <- unwindToLoopSlot cStack2
-  let bFrame = mkFrame lEnvMem $ EvalSlot body
-  let cFrame = mkFrame lEnvMem $ LoopSlot cond body LoopStateBody
+  let bFrame = frameMk lEnvMem $ EvalSlot body
+  let cFrame = frameMk lEnvMem $ LoopSlot cond body LoopStateBody
   return $ state { stStack = stackPushList [bFrame, cFrame] cStack2 }
 
 rule_Return :: State -> [State]
 rule_Return state = maybeToList $ do
   (EvalSlot (Return expr), cEnvMem, cStack2) <- stackPopV $ stStack state
-  (funMem, lEnvMem, fStack) <- unwindToLambdaBSlot cStack2
-  let rFrame = mkFrame cEnvMem $ EvalSlot expr
-  let cFrame = mkFrame lEnvMem $ LambdaBSlot funMem
+  (funMem, lEnvMem, fStack) <- unwindToLamBSlot cStack2
+  let rFrame = frameMk cEnvMem $ EvalSlot expr
+  let cFrame = frameMk lEnvMem $ LamBSlot funMem
   return $ state { stStack = stackPushList [rFrame, cFrame] fStack }
 
 rule_DiscardRetSlot :: State -> [State]
@@ -315,15 +315,15 @@ data Rule =
   | RuleMemRef
   | RuleConst
   | RuleSeq
-  | RuleLambdaAbs
-  | RuleLambdaApp
-  | RuleLambdaAppFun
-  | RuleLambdaAppFunRet
-  | RuleLambdaAppArg
-  | RuleLambdaAppArgRet
-  | RuleLambdaAppEnter
-  | RuleLambdaAppRet
-  | RuleNativeLambdaApp
+  | RuleLamAbs
+  | RuleLamApp
+  | RuleLamAppFun
+  | RuleLamAppFunRet
+  | RuleLamAppArg
+  | RuleLamAppArgRet
+  | RuleLamAppEnter
+  | RuleLamAppRet
+  | RuleNativeLamApp
   | RuleAssignId
   | RuleAssignStr
   | RuleAssignRet
@@ -348,14 +348,14 @@ rulePairs =
   , (RuleMemRef, rule_MemRef)
   , (RuleConst, rule_Const)
   , (RuleSeq, rule_Seq)
-  , (RuleLambdaAbs, rule_LambdaAbs)
-  , (RuleLambdaAppFun, rule_LambdaAppFun)
-  , (RuleLambdaAppFunRet, rule_LambdaAppFunRet)
-  , (RuleLambdaAppArg, rule_LambdaAppArg)
-  , (RuleLambdaAppArgRet, rule_LambdaAppArgRet)
-  , (RuleLambdaAppEnter, rule_LambdaAppEnter)
-  , (RuleLambdaAppRet, rule_LambdaAppRet)
-  , (RuleNativeLambdaApp, rule_NativeLambdaApp)
+  , (RuleLamAbs, rule_LamAbs)
+  , (RuleLamAppFun, rule_LamAppFun)
+  , (RuleLamAppFunRet, rule_LamAppFunRet)
+  , (RuleLamAppArg, rule_LamAppArg)
+  , (RuleLamAppArgRet, rule_LamAppArgRet)
+  , (RuleLamAppEnter, rule_LamAppEnter)
+  , (RuleLamAppRet, rule_LamAppRet)
+  , (RuleNativeLamApp, rule_NativeLamApp)
   , (RuleAssignId, rule_AssignId)
   , (RuleAssignStr, rule_AssignStr)
   , (RuleAssignRet, rule_AssignRet)

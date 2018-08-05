@@ -91,8 +91,8 @@ data RExpr =
   | RNull
   | RUnOp RUnOp RExpr
   | RBinOp RBinOp RExpr RExpr
-  | RFuncCall RExpr [RArg]
-  | RFuncDef [RParam] RExpr
+  | RFunCall RExpr [RArg]
+  | RFunDef [RParam] RExpr
   | RSeq [RExpr]
   | RVecProj RExpr [RArg]
   | RVecSub RExpr [RArg]

@@ -21,22 +21,22 @@ globalMem = memNull
 
 -- Identifier
 idVariadic :: Ident
-idVariadic = mkId "..."
+idVariadic = idFromString "..."
 
-mkIdFresh :: State -> (Ident, State)
-mkIdFresh = undefined
+idFresh :: State -> (Ident, State)
+idFresh = undefined
 
-mkIdFreshSeeded :: String -> State -> (Ident, State)
-mkIdFreshSeeded = undefined
+idFreshSeeded :: String -> State -> (Ident, State)
+idFreshSeeded = undefined
 
 -- Vector conversion
-mkConstVec :: Const -> Vector
-mkConstVec (IntConst int) = IntVec [int]
-mkConstVec (DoubleConst double) = DoubleVec [double]
-mkConstVec (ComplexConst complex) = ComplexVec [complex]
-mkConstVec (BoolConst bool) = BoolVec [bool]
-mkConstVec (StringConst str) = StringVec [str]
-mkConstVec (NaConst) = NilVec
+vecFromConst :: Const -> Vector
+vecFromConst (IntConst int) = IntVec [int]
+vecFromConst (DoubleConst double) = DoubleVec [double]
+vecFromConst (ComplexConst complex) = ComplexVec [complex]
+vecFromConst (BoolConst bool) = BoolVec [bool]
+vecFromConst (StringConst str) = StringVec [str]
+vecFromConst (NaConst) = NilVec
 
 -- Environment
 envEmpty :: Env
@@ -103,7 +103,7 @@ heapAllocList (hobj : hobjs) heap =
 
 heapAllocConst :: Const -> Heap -> (MemRef, Heap)
 heapAllocConst const heap =
-  heapAlloc (DataObj (VecVal (mkConstVec const)) attrsEmpty) heap
+  heapAlloc (DataObj (VecVal (vecFromConst const)) attrsEmpty) heap
 
 heapBinds :: Heap -> [(MemRef, HeapObj)]
 heapBinds heap = M.toList $ heapMap heap
@@ -155,7 +155,7 @@ stackPop :: Stack -> Maybe (Frame, Stack)
 stackPop stack =
   case stackList stack of
     [] -> Nothing
-    (frame : frames) -> return (frame, stack { stackList = frames })
+    (frame : frames) -> Just (frame, stack { stackList = frames })
 
 stackPopV :: Stack -> Maybe (Slot, MemRef, Stack)
 stackPopV stack = do
@@ -170,10 +170,11 @@ stackPopV2 stack = do
 
 -- Frames
 frameDefault :: Frame
-frameDefault = Frame { frameEnvMem = memNull, frameSlot = ReturnSlot memNull }
+frameDefault = frameMk memNull $ ReturnSlot memNull
 
-mkFrame :: MemRef -> Slot -> Frame
-mkFrame envMem slot = frameDefault { frameEnvMem = envMem, frameSlot = slot }
+frameMk :: MemRef -> Slot -> Frame
+frameMk envMem slot =
+  Frame { frameEnvMem = envMem, frameSlot = slot }
 
 -- Symbolic Memories
 symMemsEmpty :: SymMems

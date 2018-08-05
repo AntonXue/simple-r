@@ -118,7 +118,7 @@ expr:
   | expr MULT expr          { A.Bop (A.Mult, $1, $3) }
   | expr DIV expr           { A.Bop (A.Div, $1, $3) }
   | expr CARAT expr         { A.Bop (A.Pow, $1, $3) }
-  | expr USER_OP expr       { A.FuncCall (A.Ident { A.default_ident with name=$2 }, A.ExprArg $1 :: [A.ExprArg $3]) }
+  | expr USER_OP expr       { A.FunCall (A.Ident { A.default_ident with name=$2 }, A.ExprArg $1 :: [A.ExprArg $3]) }
   (*
     | expr '%' expr           { A.Bop (A.Modulus, $1, $3) } (* { $$ = xxbinary($2,$1,$3);  setId( $$, @$); } (* TODO *) *)
   *)
@@ -151,12 +151,12 @@ expr:
   | LPAREN expr_or_assign RPAREN { $2 }
 
   (* Functions *)
-  | expr LPAREN sublist RPAREN { A.FuncCall ($1, $3)}
+  | expr LPAREN sublist RPAREN { A.FunCall ($1, $3)}
   (* 
     | FUNCTION LPAREN formlist RPAREN expr_or_assign %prec LOW
   *)
   | FUNCTION LPAREN formlist RPAREN expr_or_assign
-                               { A.FuncDec ($3, $5)}
+                               { A.FunDef ($3, $5)}
 
   (* Control flow *)
   | NEXT                      { A.Next }

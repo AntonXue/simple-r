@@ -126,8 +126,8 @@ and 'a expr =
   | Uop of unop * 'a expr
   | Bop of binop * 'a expr * 'a expr
   (* Function declaration and calls *)
-  | FuncCall of 'a expr * ('a arg) list
-  | FuncDec of ('a param) list * 'a expr
+  | FunCall of 'a expr * ('a arg) list
+  | FunDef of ('a param) list * 'a expr
   (* Expression blocks *)
   | Block of 'a expr list            (* {} *)
   (* List Operations *)
@@ -255,12 +255,12 @@ let rec string_of_expr : 'a expr -> string =
         "RBinOp (" ^ string_of_binop b ^ ") (" ^
                  string_of_expr e1 ^ ") (" ^ string_of_expr e2 ^ ")"
     (* Functions *)
-    | FuncCall (e, args) ->
-        "RFuncCall (" ^
+    | FunCall (e, args) ->
+        "RFunCall (" ^
          string_of_expr e ^ ") [" ^
          (String.concat "," (List.map string_of_arg args)) ^ "]"
-    | FuncDec (ps, e) ->
-        "RFuncDec [" ^
+    | FunDef (ps, e) ->
+        "RFunDef [" ^
           (String.concat "," (List.map string_of_param ps)) ^ "] (" ^
           string_of_expr e ^ ")"
 
