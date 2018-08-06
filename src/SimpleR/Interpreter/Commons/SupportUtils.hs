@@ -1,6 +1,7 @@
 module SimpleR.Interpreter.Commons.SupportUtils where
 
 import qualified Data.Map as M
+import qualified Data.Set as S
 
 import SimpleR.Language
 import SimpleR.Interpreter.Commons.Support
@@ -11,6 +12,9 @@ mapInsertList kvs map = foldl (\m (k, v) -> M.insert k v m) map kvs
 
 mapDeleteList :: (Ord k) => [k] -> M.Map k v -> M.Map k v
 mapDeleteList ks map = foldl (\m k -> M.delete k m) map ks
+
+setInsertList :: (Ord a) => [a] -> S.Set a -> S.Set a
+setInsertList as set = foldl (\s a -> S.insert a s) set as
 
 -- Memories
 baseMem :: MemRef
@@ -75,6 +79,13 @@ heapEnvLookup envMem id heap = do
   DataObj (EnvVal env) _ <- heapLookup envMem heap
   envLookup id env
 
+heapEnvLookupDeep :: MemRef -> Ident -> Heap -> Maybe MemRef
+heapEnvLookupDeep envMem id heap = do
+  DataObj (EnvVal env) _ <- heapLookup envMem heap
+  case envLookup id env of
+    Just mem -> return mem
+    _ -> heapEnvLookupDeep (envPredMem env) id heap
+
 heapInsert :: MemRef -> HeapObj -> Heap -> Heap
 heapInsert mem hobj heap = heapInsertList [(mem, hobj)] heap
 
@@ -108,11 +119,11 @@ heapAllocConst const heap =
 heapBinds :: Heap -> [(MemRef, HeapObj)]
 heapBinds heap = M.toList $ heapMap heap
 
-heapEnvInsert :: MemRef -> Ident -> MemRef -> Heap -> Maybe Heap
-heapEnvInsert envMem id mem heap = heapEnvInsertList envMem [(id, mem)] heap
+heapEnvInsert :: Ident -> MemRef -> MemRef -> Heap -> Maybe Heap
+heapEnvInsert id mem envMem heap = heapEnvInsertList [(id, mem)] envMem heap
 
-heapEnvInsertList :: MemRef -> [(Ident, MemRef)] -> Heap -> Maybe Heap
-heapEnvInsertList envMem kvs heap = do
+heapEnvInsertList :: [(Ident, MemRef)] -> MemRef -> Heap -> Maybe Heap
+heapEnvInsertList kvs envMem heap = do
   DataObj (EnvVal env) attrs <- heapLookup envMem heap
   let env2 = envInsertList kvs env
   return $ heapInsert envMem (DataObj (EnvVal env2) attrs) heap
@@ -194,6 +205,20 @@ constrAppendList :: [SmtExpr] -> Constraint -> Constraint
 constrAppendList smts constr =
   constr { constrList = (constrList constr) ++ smts }
 
+-- Pures
+puresEmpty :: Pures
+puresEmpty = Pures { puresSet = S.empty }
+
+puresInsert :: Ident -> Pures -> Pures
+puresInsert id pures = puresInsertList [id] pures
+
+puresInsertList :: [Ident] -> Pures -> Pures
+puresInsertList ids pures =
+  Pures { puresSet = setInsertList ids $ puresSet pures }
+
+puresMember :: Ident -> Pures -> Bool
+puresMember id pures = S.member id $ puresSet pures
+
 -- State
 stateDefault :: State
 stateDefault =
@@ -202,6 +227,7 @@ stateDefault =
         , stBaseEnvMem = baseMem
         , stGlobalEnvMem = globalMem
         , stSymMems = symMemsEmpty
+        , stPures = puresEmpty
         , stConstr = constrEmpty
         , stFreshCount = 1
         , stPredUnique = 0

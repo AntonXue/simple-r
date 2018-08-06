@@ -60,7 +60,7 @@ liftVariadics args envMem heap = do
   let varVal = RefsVal mems
   let refsAttrs = attrsInsert "names" namesMem attrsEmpty
   let (refsMem, heap3) = heapAlloc (DataObj varVal refsAttrs) heap2
-  heap4 <- heapEnvInsert envMem idVariadic refsMem heap3
+  heap4 <- heapEnvInsert idVariadic refsMem envMem heap3
   return (refsMem, heap4)
 
 unwindToLoopSlot :: Stack -> Maybe ((Expr, Expr, LoopState), MemRef, Stack)
@@ -84,7 +84,7 @@ unwindToLamBSlot stack = do
 rule_Ident :: State -> [State]
 rule_Ident state = maybeToList $ do
   (EvalSlot (Var id), cEnvMem, cStack2) <- stackPopV $ stStack state
-  let mem = fromMaybe memNull (heapEnvLookup cEnvMem id (stHeap state))
+  let mem = fromMaybe memNull (heapEnvLookupDeep cEnvMem id (stHeap state))
   let cFrame = frameMk cEnvMem $ ReturnSlot mem
   return $ state { stStack = stackPush cFrame cStack2 }
 
@@ -168,7 +168,7 @@ rule_LamAppEnter state = maybeToList $ do
   -- Bind the variadic sand memBinds first
   let (memBinds, exprBinds) = splitBinds binds
   (_, heap2) <- liftVariadics vars fEnvMem $ stHeap state
-  heap3 <- heapEnvInsertList fEnvMem memBinds heap2
+  heap3 <- heapEnvInsertList memBinds fEnvMem heap2
   -- Now add the expression bindings before the body thing
   let aFrames = map (\(id, expr) ->
                  frameMk fEnvMem $ EvalSlot $ Assign (Var id) expr) exprBinds
@@ -211,7 +211,7 @@ rule_AssignRet :: State -> [State]
 rule_AssignRet state = maybeToList $ do
   (ReturnSlot mem, _, AssignSlot id, cEnvMem, cStack2)
     <- stackPopV2 $ stStack state
-  heap2 <- heapEnvInsert cEnvMem id mem $ stHeap state
+  heap2 <- heapEnvInsert id mem cEnvMem $ stHeap state
   let cFrame = frameMk cEnvMem $ ReturnSlot mem
   return $ state { stHeap = heap2
                  , stStack = stackPush cFrame cStack2 }

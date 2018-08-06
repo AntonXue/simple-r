@@ -546,8 +546,9 @@ rule tokenize context = parse
                     SYMBOL str }
   | user_op     { step (USER_OP (Lexing.lexeme lexbuf)) context;
                     USER_OP (Lexing.lexeme lexbuf) }
-  | string      { step (STRING_CONST (strip_string_quotes (Lexing.lexeme lexbuf))) context;
-                    STRING_CONST (strip_string_quotes (Lexing.lexeme lexbuf)) }
+  | string      { let tmp = Lexing.lexeme lexbuf in
+                  let _ = step (STRING_CONST (strip_string_quotes tmp)) context in
+                    STRING_CONST (strip_string_quotes tmp) }
   | hex         { step (INT_CONST 0) context;
                     INT_CONST (int_of_string (Lexing.lexeme lexbuf)) }
   | int         { step (INT_CONST 0) context;

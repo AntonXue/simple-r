@@ -1,6 +1,7 @@
 module SimpleR.Interpreter.Commons.Support where
 
 import qualified Data.Map as M
+import qualified Data.Set as S
 
 import SimpleR.Language
 import SimpleR.Smt
@@ -83,12 +84,17 @@ data SymMems = SymMems
   { symMemsList :: [MemRef]
   } deriving (Eq, Show, Read)
 
+data Pures = Pures
+  { puresSet :: S.Set Ident
+  } deriving (Eq, Show, Read)
+
 data State = State
   { stStack :: Stack
   , stHeap :: Heap
   , stBaseEnvMem :: MemRef
   , stGlobalEnvMem :: MemRef
   , stSymMems :: SymMems
+  , stPures :: Pures
   , stConstr :: Constraint
   , stFreshCount :: Int
   , stPredUnique :: Int
