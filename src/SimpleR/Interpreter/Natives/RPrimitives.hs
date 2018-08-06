@@ -120,6 +120,9 @@ data RPrim =
   | RPrimHelp
   | RPrimVecProj
   | RPrimVecSub
+
+  | RPrimGetPackage
+  | RPrimGetPackageInt
   deriving (Ord, Eq, Show, Read)
 
 -- Utility functions for working with primitives
@@ -267,14 +270,16 @@ primAll =
   , ("Re",    RPrimReal,    [])
 
   -- Things that were not explicitly included but nice for smooth translation.
-  , ("!",   RPrimNot,         [])
-  , (":",   RPrimColon,       [])
-  , ("<-",  RPrimAssign,      [])
-  , ("<<-", RPrimSuperAssign, [])
-  , ("~",   RPrimForm,        [])
-  , ("?",   RPrimHelp,        [])
-  , ("[[",  RPrimVecProj,     [])
-  , ("[",   RPrimVecSub,      [])
+  , ("!",   RPrimNot,             [])
+  , (":",   RPrimColon,           [])
+  , ("<-",  RPrimAssign,          [])
+  , ("<<-", RPrimSuperAssign,     [])
+  , ("~",   RPrimForm,            [])
+  , ("?",   RPrimHelp,            [])
+  , ("[[",  RPrimVecProj,         [])
+  , ("[",   RPrimVecSub,          [])
+  , ("::",  RPrimGetPackage,      [])
+  , (":::", RPrimGetPackageInt,   [])
   ]
 
 primIds :: [Ident]

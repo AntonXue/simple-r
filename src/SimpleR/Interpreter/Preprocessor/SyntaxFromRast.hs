@@ -32,6 +32,7 @@ instance Convertable RConst Const where
   convert (RStrConst (RNaString)) int = (NaConst, int)
   convert (RBoolConst (RBool bool)) int = (BoolConst bool, int)
   convert (RBoolConst (RNaBool)) int = (NaConst, int)
+  convert (RNaConst) int = (NaConst, int)
 
 instance Convertable RParam Param where
   convert (RParam rid) int =
@@ -90,8 +91,8 @@ instance Convertable RBinOp RPrim where
   -- convert ROuterProd int
   -- convert RKronProd int
   -- convert RObjAttr int
-  -- convert RGetPackage int
-  -- convert RGetPackageInt int
+  convert RGetPackage int = (RPrimGetPackage, int)
+  convert RGetPackageInt int = (RPrimGetPackageInt, int)
   -- convert RMatch int
   convert binop _ = error $ "convert: unsupported: " ++ show binop
 

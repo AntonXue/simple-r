@@ -212,18 +212,18 @@ exprlist:
   ;
 
 sublist :
-  | sub               { [$1] }
-  | sublist COMMA sub { $1 @ [$3] }
+  | sub               { $1 }
+  | sublist COMMA sub { $1 @ $3 }
   ;
 
-sub :                           { A.EmptyArg } 
-  | expr                        { A.ExprArg $1 }
-  | SYMBOL EQ_ASSIGN            { A.IdentAssignEmpty {A.default_ident with name=$1} }
-  | SYMBOL EQ_ASSIGN expr       { A.IdentAssign ({A.default_ident with name=$1}, $3) }
-  | STRING_CONST EQ_ASSIGN      { A.StringAssignEmpty $1 }
-  | STRING_CONST EQ_ASSIGN expr { A.StringAssign ($1, $3) }
-  | NULL EQ_ASSIGN              { A.NullAssignEmpty }
-  | NULL EQ_ASSIGN expr         { A.NullAssign $3 }
+sub :                           { [] } 
+  | expr                        { [A.ExprArg $1] }
+  | SYMBOL EQ_ASSIGN            { [A.IdentAssignEmpty {A.default_ident with name=$1}] }
+  | SYMBOL EQ_ASSIGN expr       { [A.IdentAssign ({A.default_ident with name=$1}, $3)] }
+  | STRING_CONST EQ_ASSIGN      { [A.StringAssignEmpty $1] }
+  | STRING_CONST EQ_ASSIGN expr { [A.StringAssign ($1, $3)] }
+  | NULL EQ_ASSIGN              { [A.NullAssignEmpty] }
+  | NULL EQ_ASSIGN expr         { [A.NullAssign $3] }
   ;
 
 formlist:

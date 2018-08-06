@@ -107,7 +107,6 @@ type 'a arg =
   | NullAssign of 'a expr
   (* Variadic argument *)
   | ArgDots
-  | EmptyArg
 
 
 and 'a param =
@@ -178,7 +177,7 @@ let string_of_unop : unop -> string =
 let string_of_binop : binop -> string =
   function
     | Plus          -> "RPlus"
-    | Minus         -> "RMins"
+    | Minus         -> "RMinus"
     | Mult          -> "RMult"
     | Div           -> "RDiv"
     | Pow           -> "RPow"
@@ -294,7 +293,6 @@ let rec string_of_expr : 'a expr -> string =
 
 and string_of_arg : 'a arg -> string =
   function
-    | EmptyArg            -> "REmptyArg"
     | ExprArg e           -> "RExprArg (" ^ string_of_expr e ^ ")"
     | IdentAssign (i, e)  -> "RIdentAssign (" ^ string_of_ident i ^ ") (" ^
                               string_of_expr e ^ ")"

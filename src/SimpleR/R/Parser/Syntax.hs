@@ -75,7 +75,6 @@ data RArg =
   | RNullAssign RExpr
   | RNullAssignEmpty
   | RVarArg
-  | REmptyArg
   deriving (Eq, Show, Read)
 
 data RConst =
