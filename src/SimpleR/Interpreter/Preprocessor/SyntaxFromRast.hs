@@ -1,5 +1,5 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
-module SimpleR.Interpreter.Preprocess.SyntaxFromRast
+module SimpleR.Interpreter.Preprocessor.SyntaxFromRast
   ( convert
   ) where
 
@@ -7,7 +7,7 @@ import SimpleR.R.Parser.Syntax
 import SimpleR.Language
 import SimpleR.Interpreter.Natives
 
-class Convert a b where
+class Convertable a b where
   convert :: a -> Int -> (b, Int)
 
 idAnonSeeded :: String -> Int -> (Ident, Int)
@@ -16,12 +16,12 @@ idAnonSeeded str int =
     (Ident { idName = name, idPkg = Nothing, idAnnot = Nothing },
      int + 1)
 
-instance Convert RIdent Ident where
+instance Convertable RIdent Ident where
   convert rid int =
     (Ident { idName = ridName rid, idPkg = ridPkg rid, idAnnot = Nothing },
      int)
 
-instance Convert RConst Const where
+instance Convertable RConst Const where
   convert (RNumConst (RNumInt int)) iint = (IntConst int, iint)
   convert (RNumConst (RNumNaInt)) int = (NaConst, int)
   convert (RNumConst (RNumFloat float)) int = (DoubleConst float, int)
@@ -33,7 +33,7 @@ instance Convert RConst Const where
   convert (RBoolConst (RBool bool)) int = (BoolConst bool, int)
   convert (RBoolConst (RNaBool)) int = (NaConst, int)
 
-instance Convert RParam Param where
+instance Convertable RParam Param where
   convert (RParam rid) int =
     let (id, int2) = convert rid int in (Param id, int2)
   convert (RDefault rid rexpr) int =
@@ -42,7 +42,7 @@ instance Convert RParam Param where
       (Default id expr, int3)
   convert (RVarParam) int = (VarParam, int)
 
-instance Convert RArg Arg where
+instance Convertable RArg Arg where
   convert (RExprArg rexpr) int =
     let (expr, int2) = convert rexpr int in (Arg expr, int2)
   convert (RIdentAssign rid rexpr) int =
@@ -56,14 +56,14 @@ instance Convert RArg Arg where
   convert (RVarArg) int = (VarArg, int)
   convert arg _ = error $ "convert: " ++ show arg
 
-instance Convert RUnOp RPrim where
+instance Convertable RUnOp RPrim where
   convert RUMinus int = (RPrimMinus, int)
   convert RUPlus int = (RPrimPlus, int)
   convert RUNot int = (RPrimNot, int)
   convert RUForm int = (RPrimForm, int)
   convert RUHelp int = (RPrimHelp, int)
 
-instance Convert RBinOp RPrim where
+instance Convertable RBinOp RPrim where
   convert RPlus int = (RPrimPlus, int)
   convert RMinus int = (RPrimMinus, int)
   convert RMult int = (RPrimMult, int)
@@ -95,7 +95,7 @@ instance Convert RBinOp RPrim where
   -- convert RMatch int
   convert binop _ = error $ "convert: unsupported: " ++ show binop
 
-instance Convert RExpr Expr where
+instance Convertable RExpr Expr where
   convert (RConst rconst) int =
     let (const, int2) = convert rconst int in (Const const, int2)
   convert (RVar rid) int =
@@ -172,10 +172,16 @@ instance Convert RExpr Expr where
 
 lamAppPrim :: RPrim -> [Arg] -> Expr
 lamAppPrim prim args =
-  LamApp (Var $ idStupidFromRPrim prim) args
+  -- LamApp (Var $ idStupidFromRPrim prim) args
+  LamApp (Var $ idFromRPrim prim) args
 
-convertList :: (Convert a b) => [a] -> Int -> ([b], Int)
+convertList :: (Convertable a b) => [a] -> Int -> ([b], Int)
 convertList as int =
   foldl (\(acc, i) a -> let (b, i2) = convert a i in (acc ++ [b], i2))
         ([], int) as
+
+instance Convertable RProgram Program where
+  convert (RProgram rexprs) int =
+    let (exprs, int2) = convertList rexprs int in
+      (Program exprs, int2)
 
