@@ -19,7 +19,7 @@ import SimpleR.R
 import SimpleR.Interpreter.Commons
 import SimpleR.Interpreter.Natives
 import SimpleR.Interpreter.Preprocessor.SyntaxFromRast
-import SimpleR.Interpreter.Preprocessor.NamingPass
+import SimpleR.Interpreter.Preprocessor.RunPasses
 
 -- The big picture for the phases:
 --  1. Parse the base
@@ -71,10 +71,16 @@ rawProgramFromCanonRFile file = do
     _ -> error $ "rawProgramFromCanonRFile: error parsing " ++ show file
 
 rawBasePasses :: Program -> Maybe Program
-rawBasePasses prog = Just $ renameBasePrims prog
+rawBasePasses prog =
+  case runBasePasses prog of
+    Right msgs -> error $ "rawBasePasses:\n" ++ (L.intercalate "\n" msgs)
+    Left passed -> Just passed
 
 rawUserPasses :: Program -> Maybe Program
-rawUserPasses prog = Just $ renameUserPrims prog
+rawUserPasses prog =
+  case runUserPasses prog of
+    Right msgs -> error $ "rawBasePasses:\n" ++ (L.intercalate "\n" msgs)
+    Left passed -> Just passed
 
 passedBaseFromCanonRFile :: String -> IO Program
 passedBaseFromCanonRFile file = do

@@ -6,11 +6,13 @@ module SimpleR.Interpreter.Natives.RPrimitives
   , idPrimFromString
   , primAll
   , primIds
+  , primIdSet
   , primNameDataPairs
   , primInjectionPairs
   ) where
 
 import Data.Maybe
+import qualified Data.Set as S
 
 import SimpleR.Language
 import SimpleR.Interpreter.Commons
@@ -284,6 +286,9 @@ primAll =
 
 primIds :: [Ident]
 primIds = map (\(n, _, _) -> idPrimFromString n) primAll
+
+primIdSet :: S.Set Ident
+primIdSet = S.fromList primIds
 
 primNameDataPairs :: [(String, RPrim)]
 primNameDataPairs = map (\(n, d, _) -> (n, d)) primAll
