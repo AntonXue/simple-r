@@ -86,6 +86,16 @@ heapEnvLookupDeep envMem id heap = do
     Just mem -> return mem
     _ -> heapEnvLookupDeep (envPredMem env) id heap
 
+heapEnvLookupDeepFun :: MemRef -> Ident -> Heap -> Maybe MemRef
+heapEnvLookupDeepFun envMem id heap = do
+  DataObj (EnvVal env) _ <- heapLookup envMem heap
+  case envLookup id env of
+    Just mem ->
+      case heapLookup mem heap of
+        Just (DataObj (FunVal _ _ _) _) -> return mem
+        _ -> heapEnvLookupDeepFun (envPredMem env) id heap
+    _ -> heapEnvLookupDeepFun (envPredMem env) id heap
+
 heapInsert :: MemRef -> HeapObj -> Heap -> Heap
 heapInsert mem hobj heap = heapInsertList [(mem, hobj)] heap
 

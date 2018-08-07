@@ -200,7 +200,7 @@ injectPrimBinds primEnvMem heap =
   foldl (\(accs, hp) (id, (params, body)) ->
           let fEnv = envEmpty { envPredMem = primEnvMem } in
           let fEnvObj = DataObj (EnvVal fEnv) attrsEmpty in
-          let (fEnvMem, hp2) = heapAlloc fEnvObj heap in
+          let (fEnvMem, hp2) = heapAlloc fEnvObj hp in
           let funVal = FunVal fEnvMem params body in
           let funObj = DataObj funVal attrsEmpty in
           let (funMem, hp3) = heapAlloc funObj hp2 in

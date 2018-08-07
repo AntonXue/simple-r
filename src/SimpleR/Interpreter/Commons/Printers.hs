@@ -65,8 +65,9 @@ ppFrame frame =
 
 ppStack :: Stack -> String
 ppStack stack =
-  let header = ">> Stack" in
-  let frames = map ppFrame $ stackList stack in
+  let header = ">> Stack (Reverse dump)" in
+  -- let frames = map ppFrame $ stackList stack in
+  let frames = reverse $ map ppFrame $ stackList stack in
     injBreakRep "-" 20 $ header : frames
 
 ppAttrs :: Attributes -> String

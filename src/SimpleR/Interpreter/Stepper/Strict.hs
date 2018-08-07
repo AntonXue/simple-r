@@ -81,12 +81,23 @@ unwindToLamBSlot stack = do
 
 -- Rules
 
+-- rule_Ident :: State -> [State]
+-- rule_Ident state = maybeToList $ do
+--   (EvalSlot (Var id), cEnvMem, cStack2) <- stackPopV $ stStack state
+--   let mem = fromMaybe memNull (heapEnvLookupDeep cEnvMem id (stHeap state))
+--   let cFrame = frameMk cEnvMem $ ReturnSlot mem
+--   return $ state { stStack = stackPush cFrame cStack2 }
+
 rule_Ident :: State -> [State]
 rule_Ident state = maybeToList $ do
   (EvalSlot (Var id), cEnvMem, cStack2) <- stackPopV $ stStack state
-  let mem = fromMaybe memNull (heapEnvLookupDeep cEnvMem id (stHeap state))
+  let lookupFun = case stackPopV cStack2 of
+                    Just (LamASlot _ _ _ _, _, _) -> heapEnvLookupDeepFun
+                    _ -> heapEnvLookupDeep
+  let mem = fromMaybe memNull (lookupFun cEnvMem id (stHeap state))
   let cFrame = frameMk cEnvMem $ ReturnSlot mem
   return $ state { stStack = stackPush cFrame cStack2 }
+  
 
 rule_MemRef :: State -> [State]
 rule_MemRef state = maybeToList $ do
