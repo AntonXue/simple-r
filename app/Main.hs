@@ -10,5 +10,5 @@ main = do
   -- prog <- parseRFile $ head args
   -- putStrLn $ show prog
   state <- loadFileGuessWithBase $ head args
-  putStrLn $ show state
+  putStrLn $ ppState state
 
