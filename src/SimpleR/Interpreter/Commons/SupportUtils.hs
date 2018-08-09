@@ -178,24 +178,24 @@ stackPop stack =
     [] -> Nothing
     (frame : frames) -> Just (frame, stack { stackList = frames })
 
-stackPopV :: Stack -> Maybe (Slot, MemRef, Stack)
+stackPopV :: Stack -> Maybe (Cont, MemRef, Stack)
 stackPopV stack = do
   (frame, stack2) <- stackPop stack
-  return (frameSlot frame, frameEnvMem frame, stack2)
+  return (frameCont frame, frameEnvMem frame, stack2)
 
-stackPopV2 :: Stack -> Maybe (Slot, MemRef, Slot, MemRef, Stack)
+stackPopV2 :: Stack -> Maybe (Cont, MemRef, Cont, MemRef, Stack)
 stackPopV2 stack = do
-  (slot1, envMem1, stack2) <- stackPopV stack
-  (slot2, envMem2, stack3) <- stackPopV stack2
-  return (slot1, envMem1, slot2, envMem2, stack3)
+  (cont1, envMem1, stack2) <- stackPopV stack
+  (cont2, envMem2, stack3) <- stackPopV stack2
+  return (cont1, envMem1, cont2, envMem2, stack3)
 
 -- Frames
 frameDefault :: Frame
-frameDefault = frameMk memNull $ ReturnSlot memNull
+frameDefault = frameMk memNull $ ReturnCont memNull
 
-frameMk :: MemRef -> Slot -> Frame
-frameMk envMem slot =
-  Frame { frameEnvMem = envMem, frameSlot = slot }
+frameMk :: MemRef -> Cont -> Frame
+frameMk envMem cont =
+  Frame { frameEnvMem = envMem, frameCont = cont }
 
 -- Symbolic Memories
 symMemsEmpty :: SymMems

@@ -57,8 +57,6 @@ argExpr (Error) = PassFail ["argExpr: 'ERROR' in argument"]
 
 -- Assignments should not be allowed
 argExpr (Assign _ _) = PassFail ["argExpr: assignment in argument"]
-argExpr (SuperAssign _ _) =
-  PassFail ["argExpr: super assignment in arugment"]
 
 -- While loops in arguments? I guess??
 argExpr (While exprc exprb) = do
@@ -96,10 +94,6 @@ progExpr (Assign expr1 expr2) = do
   e1 <- progExpr expr1
   e2 <- progExpr expr2
   return $ Assign e1 e2
-progExpr (SuperAssign expr1 expr2) = do
-  e1 <- progExpr expr1
-  e2 <- progExpr expr2
-  return $ SuperAssign e1 e2
 progExpr (If expr1 expr2 expr3) = do
   e1 <- progExpr expr1
   e2 <- progExpr expr2

@@ -81,8 +81,6 @@ renameExpr o n expr =
 
 
       Assign expr1 expr2 -> Assign (rename o n expr1) (rename o n expr2)
-      SuperAssign expr1 expr2 ->
-        SuperAssign (rename o n expr1) (rename o n expr2)
 
     If expr1 expr2 expr3 ->
       If (renameExpr o n expr1) (renameExpr o n expr2) (renameExpr o n expr3)

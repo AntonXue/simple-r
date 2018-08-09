@@ -54,13 +54,13 @@ ppEnv env =
   let map = ppMap $ envMap env in
     injNewline [header, map]
 
-ppSlot :: Slot -> String
-ppSlot slot = show slot
+ppCont :: Cont -> String
+ppCont slot = show slot
 
 ppFrame :: Frame -> String
 ppFrame frame =
   let header = ">>>>> Frame " ++ (ppMem $ frameEnvMem frame) in
-  let slot = ppSlot $ frameSlot frame in
+  let slot = ppCont $ frameCont frame in
     injNewline [header, slot]
 
 ppStack :: Stack -> String

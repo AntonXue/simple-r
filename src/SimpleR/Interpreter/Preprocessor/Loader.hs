@@ -197,7 +197,7 @@ framesFromPairs exprPairs filePairs =
   let fileMap = M.fromList filePairs in
     map (\(file, expr) ->
         case M.lookup file fileMap of
-          Just mem -> frameMk mem $ EvalSlot expr
+          Just mem -> frameMk mem $ EvalCont expr
           _ -> error $ "framesFromPairs " ++ show file ++ "\n" ++ show fileMap)
         exprPairs
 

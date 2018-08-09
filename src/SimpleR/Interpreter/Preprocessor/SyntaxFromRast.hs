@@ -114,10 +114,10 @@ instance Convertable RExpr Expr where
       (Assign expr1 expr2, int3)
 
   -- Super assignment
-  convert (RBinOp RSuperAssign rexpr1 rexpr2) int =
-    let (expr1, int2) = convert rexpr1 int in
-    let (expr2, int3) = convert rexpr2 int2 in
-      (SuperAssign expr1 expr2, int3)
+  -- convert (RBinOp RSuperAssign rexpr1 rexpr2) int =
+  --   let (expr1, int2) = convert rexpr1 int in
+  --   let (expr2, int3) = convert rexpr2 int2 in
+  --     (SuperAssign expr1 expr2, int3)
 
   -- Colon operator
   convert (RBinOp RRange rexpr1 rexpr2) int =

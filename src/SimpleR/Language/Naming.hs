@@ -37,8 +37,6 @@ instance Renameable Expr where
         NativeLamApp (rename o n id) (map (rename o n) ids)
       Return expr -> Return (rename o n expr)
       Assign expr1 expr2 -> Assign (rename o n expr1) (rename o n expr2)
-      SuperAssign expr1 expr2 ->
-        SuperAssign (rename o n expr1) (rename o n expr2)
       If expr1 expr2 expr3 ->
         If (rename o n expr1) (rename o n expr2) (rename o n expr3)
       While expr1 expr2 -> While (rename o n expr1) (rename o n expr2)

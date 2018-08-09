@@ -55,7 +55,7 @@ data Stack = Stack
 
 data Frame = Frame
   { frameEnvMem :: MemRef
-  , frameSlot :: Slot
+  , frameCont :: Cont
   } deriving (Eq, Show, Read)
 
 data LoopState =
@@ -63,21 +63,21 @@ data LoopState =
   | LoopStateBody
   deriving (Eq, Show, Read)
 
-data Slot =
-    EvalSlot Expr
-  | ReturnSlot MemRef
-  | SeqSlot [Expr]
-  | BranchSlot Expr Expr
-  | LoopSlot Expr Expr LoopState
+data Cont =
+    EvalCont Expr
+  | ReturnCont MemRef
+  | SeqCont [Expr]
+  | BranchCont Expr Expr
+  | LoopCont Expr Expr LoopState
 
-  | AssignSlot Ident
-  | SupAssignSlot Ident
-  | LamASlot (Maybe MemRef) [(Arg, MemRef)] (Maybe Arg) [Arg]
-  | LamBSlot MemRef
+  | AssignCont Ident
+  | SupAssignCont Ident
+  | LamACont (Maybe MemRef) [(Arg, MemRef)] (Maybe Arg) [Arg]
+  | LamBCont MemRef
 
-  | UpdateSlot MemRef
-  | ArgSlot [Arg]
-  | AttrSlot (Maybe MemRef) (Maybe Expr)
+  | UpdateCont MemRef
+  | ArgCont [Arg]
+  | AttrCont (Maybe MemRef) (Maybe Expr)
   deriving (Eq, Show, Read)
 
 data SymMems = SymMems

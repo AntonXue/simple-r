@@ -54,7 +54,6 @@ data Expr =
   | NativeLamApp Ident [Ident]
   | Return Expr
   | Assign Expr Expr
-  | SuperAssign Expr Expr
   | If Expr Expr Expr
   | While Expr Expr
   | Break
