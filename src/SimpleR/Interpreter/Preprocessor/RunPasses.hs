@@ -5,23 +5,21 @@ module SimpleR.Interpreter.Preprocessor.RunPasses
 
 import SimpleR.Language
 import SimpleR.Interpreter.Commons
-import SimpleR.Interpreter.Preprocessor.Passes.NamingPass
-import SimpleR.Interpreter.Preprocessor.Passes.PureArgsPass
+import SimpleR.Interpreter.Preprocessor.Passes
+-- import SimpleR.Interpreter.Preprocessor.Passes.NamingPass
+-- import SimpleR.Interpreter.Preprocessor.Passes.PureArgsPass
 
-type PassResult = Either Program [String]
-
-composePasses ::
-  (Program -> PassResult) -> (Program -> PassResult) -> (Program -> PassResult)
-composePasses pass1 pass2 prog =
-  case pass1 prog of
-    Right msgs -> Right msgs
-    Left prog2 -> pass2 prog2
 
 -- runBasePasses :: Program -> PassResult
-runBasePasses :: Program -> Either Program [String]
-runBasePasses prog = undefined
+runBasePasses :: Program -> PassResult Program
+runBasePasses prog = do
+  p1 <- renameBasePrimsPass prog
+  return p1
 
 -- runUserPasses :: Program -> PassResult
-runUserPasses :: Program -> Either Program [String]
-runUserPasses prog = undefined
+runUserPasses :: Program -> PassResult Program
+runUserPasses prog = do
+  p1 <- renameUserPrimsPass prog
+  p2 <- pureArgsPass p1
+  return p2
 

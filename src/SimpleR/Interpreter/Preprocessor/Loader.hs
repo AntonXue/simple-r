@@ -2,9 +2,7 @@ module SimpleR.Interpreter.Preprocessor.Loader
   ( baseDir
   , baseFile
   , canonRFile
-  , rawProgramFromCanonRFile
-  , rawBasePasses
-  , rawUserPasses
+  , programFromFile
   , loadFileWithBase
   , loadFileGuessWithBase
   ) where
@@ -19,6 +17,7 @@ import SimpleR.R
 import SimpleR.Interpreter.Commons
 import SimpleR.Interpreter.Natives
 import SimpleR.Interpreter.Preprocessor.SyntaxFromRast
+import SimpleR.Interpreter.Preprocessor.Passes
 import SimpleR.Interpreter.Preprocessor.RunPasses
 
 -- The big picture for the phases:
@@ -63,39 +62,25 @@ canonRFile dir file =
 -----
 -- Parsing the R file + passes
 
-rawProgramFromCanonRFile :: String -> IO Program
-rawProgramFromCanonRFile file = do
+programFromFile :: String -> IO Program
+programFromFile file = do
   maybeRProg <- parseRFile file
   case maybeRProg of
     (Just rprog) -> return $ fst $ convert rprog 1 -- Seed is whatever, here 1
-    _ -> error $ "rawProgramFromCanonRFile: error parsing " ++ show file
+    _ -> error $ "programFromFile: error parsing " ++ show file
 
-rawBasePasses :: Program -> Maybe Program
-rawBasePasses prog =
-  case runBasePasses prog of
-    Right msgs -> error $ "rawBasePasses:\n" ++ (L.intercalate "\n" msgs)
-    Left passed -> Just passed
+passedBaseFromFile :: String -> IO Program
+passedBaseFromFile file = do
+  baseProg <- programFromFile file
+  case runBasePasses baseProg of
+    PassFail msgs -> error $ "passedBaseFromCanonFile: msgs " ++ show msgs
+    PassOkay prog -> return prog
 
-rawUserPasses :: Program -> Maybe Program
-rawUserPasses prog =
-  case runUserPasses prog of
-    Right msgs -> error $ "rawBasePasses:\n" ++ (L.intercalate "\n" msgs)
-    Left passed -> Just passed
-
-passedBaseFromCanonRFile :: String -> IO Program
-passedBaseFromCanonRFile file = do
-  baseProg <- rawProgramFromCanonRFile file
-  case rawBasePasses baseProg of
-    Just passed -> return passed
-    _ -> error "passedBaseFromCanonRFile: failed passes on base"
-
-passedUserFromCanonRFile :: String -> IO Program
-passedUserFromCanonRFile file = do
-  userProg <- rawProgramFromCanonRFile file
-  case rawUserPasses userProg of
-    Just passed -> return passed
-    _ -> error "passedUserFromCanonRFile: failed passes on user program"
-
+passedUserFromFile file = do
+  userProg <- programFromFile file
+  case runUserPasses userProg of
+    PassFail msgs -> error $ "passedUserFromCanonFile: msgs " ++ show msgs
+    PassOkay prog -> return prog
 
 -----
 -- Set the stuff up so that it's actually ready to load into a State
@@ -121,21 +106,21 @@ execTreeFromFile dir file parser = do
 
 -----
 -- Get the base and user exec trees, which will later be linearized
-rawBaseExecTree :: IO ExecTree
-rawBaseExecTree = do
+baseExecTree :: IO ExecTree
+baseExecTree = do
   base <- baseDir
   file <- baseFile
-  execTreeFromFile base file passedBaseFromCanonRFile
+  execTreeFromFile base file passedBaseFromFile
 
-rawUserExecTree :: String -> String -> IO ExecTree
-rawUserExecTree dir file = execTreeFromFile dir file passedUserFromCanonRFile
+userExecTree :: String -> String -> IO ExecTree
+userExecTree dir file = execTreeFromFile dir file passedUserFromFile
 
 passedBaseExecTree :: IO ExecTree
-passedBaseExecTree = rawBaseExecTree -- Nothing yet at this phase
+passedBaseExecTree = baseExecTree -- Nothing yet at this phase
 
 -- Nothing yet at this phase
 passedUserExecTree :: String -> String -> IO ExecTree
-passedUserExecTree dir file = rawUserExecTree dir file
+passedUserExecTree dir file = userExecTree dir file
 
 -----
 -- ExecTree processing + linearization

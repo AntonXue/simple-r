@@ -203,6 +203,7 @@ rule_NativeLamApp state =
     Just (EvalCont (NativeLamApp _ _), _, _) -> nativeCall state
     _ -> []
 
+-- TODO: COPYING
 rule_AssignId :: State -> [State]
 rule_AssignId state = maybeToList $ do
   (EvalCont (Assign (Var id) expr), cEnvMem, cStack2)
