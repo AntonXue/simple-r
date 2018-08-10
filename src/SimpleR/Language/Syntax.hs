@@ -12,10 +12,6 @@ data Ident = Ident
   , idAnnot :: Maybe IdentAnnot
   } deriving (Ord, Eq, Show, Read)
 
-data MemRef = MemRef
-  { memAddr :: Int
-  } deriving (Ord, Eq, Show, Read)
-
 data TickAnnot = TickAnnot  deriving (Eq, Show, Read)
 
 data Tick = Tick
@@ -46,7 +42,6 @@ data Arg =
 
 data Expr =
     Var Ident
-  | Mem MemRef
   | Const Const
   | Seq [Expr]
   | LamAbs [Param] Expr

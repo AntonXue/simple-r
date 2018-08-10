@@ -5,8 +5,15 @@ import qualified Data.Set as S
 
 import SimpleR.Language
 import SimpleR.Smt
+import SimpleR.Interpreter.Commons.Vector
 
-data Type = IntTy | DoubleTy | ComplexTy | BoolTy | StringTy
+data MemRef = MemRef
+  { memAddr :: Int
+  } deriving (Ord, Eq, Show, Read)
+
+data Redex =
+    EvalRed MemRef Expr
+  | ResultRed MemRef
   deriving (Eq, Show, Read)
 
 data Env = Env
@@ -31,16 +38,6 @@ data Value =
   | EnvVal Env
   deriving (Eq, Show, Read)
 
-data Vector =
-    IntVec [Int]
-  | DoubleVec [Double]
-  | ComplexVec [Complex]
-  | BoolVec [Bool]
-  | StringVec [String]
-  | NilVec
-  | SymVec SmtIdent Type
-  deriving (Eq, Show, Read)
-
 data Attributes = Attributes
   { attrsMap :: M.Map String MemRef
   } deriving (Eq, Show, Read)
@@ -58,44 +55,45 @@ data Frame = Frame
   , frameCont :: Cont
   } deriving (Eq, Show, Read)
 
-data LoopState =
-    LoopStateCond
-  | LoopStateBody
+data LoopConfig =
+    LoopConfigCond
+  | LoopConfigBody
   deriving (Eq, Show, Read)
 
 data Cont =
-    EvalCont Expr
-  | ReturnCont MemRef
-  | SeqCont [Expr]
+    ExprCont Expr
   | BranchCont Expr Expr
-  | LoopCont Expr Expr LoopState
-
+  | LoopCont Expr Expr LoopConfig
   | AssignCont Ident
-  | SupAssignCont Ident
+
+  -- Eager function evaluation
   | LamACont (Maybe MemRef) [(Arg, MemRef)] (Maybe Arg) [Arg]
   | LamBCont MemRef
 
+  -- Unused, but existing
+  | SupAssignCont Ident
+
+  -- Really lazy evaluation.
   | UpdateCont MemRef
   | ArgCont [Arg]
+
+  -- Arguments
   | AttrCont (Maybe MemRef) (Maybe Expr)
   deriving (Eq, Show, Read)
-
-data SymMems = SymMems
-  { symMemsList :: [MemRef]
-  } deriving (Eq, Show, Read)
 
 data Pures = Pures
   { puresSet :: S.Set Ident
   } deriving (Eq, Show, Read)
 
 data State = State
-  { stStack :: Stack
+  { stRedex :: Redex
+  , stStack :: Stack
   , stHeap :: Heap
+  , stConstr :: Constraint
+  --
   , stBaseEnvMem :: MemRef
   , stGlobalEnvMem :: MemRef
-  , stSymMems :: SymMems
   , stPures :: Pures
-  , stConstr :: Constraint
   , stFreshCount :: Int
   , stPredUnique :: Int
   , stUnique :: Int

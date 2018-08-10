@@ -5,6 +5,7 @@ import qualified Data.Set as S
 
 import SimpleR.Language
 import SimpleR.Interpreter.Commons.Support
+import SimpleR.Interpreter.Commons.Vector
 import SimpleR.Smt
 
 mapInsertList :: (Ord k) => [(k, v)] -> M.Map k v -> M.Map k v
@@ -16,7 +17,16 @@ mapDeleteList ks map = foldl (\m k -> M.delete k m) map ks
 setInsertList :: (Ord a) => [a] -> S.Set a -> S.Set a
 setInsertList as set = foldl (\s a -> S.insert a s) set as
 
--- Memories
+-- MemRef
+memFromInt :: Int -> MemRef
+memFromInt int = MemRef { memAddr = int }
+
+memNull :: MemRef
+memNull = memFromInt 0
+
+memNext :: MemRef -> MemRef
+memNext mem = memFromInt $ 1 + memAddr mem
+
 baseMem :: MemRef
 baseMem = memNull
 
@@ -27,20 +37,14 @@ globalMem = memNull
 idVariadic :: Ident
 idVariadic = idFromString "..."
 
+idNull :: Ident
+idNull = idFromString "NULL"
+
 idFresh :: State -> (Ident, State)
 idFresh = undefined
 
 idFreshSeeded :: String -> State -> (Ident, State)
 idFreshSeeded = undefined
-
--- Vector conversion
-vecFromConst :: Const -> Vector
-vecFromConst (IntConst int) = IntVec [int]
-vecFromConst (DoubleConst double) = DoubleVec [double]
-vecFromConst (ComplexConst complex) = ComplexVec [complex]
-vecFromConst (BoolConst bool) = BoolVec [bool]
-vecFromConst (StringConst str) = StringVec [str]
-vecFromConst (NaConst) = NilVec
 
 -- Environment
 envEmpty :: Env
@@ -190,19 +194,9 @@ stackPopV2 stack = do
   return (cont1, envMem1, cont2, envMem2, stack3)
 
 -- Frames
-frameDefault :: Frame
-frameDefault = frameMk memNull $ ReturnCont memNull
-
 frameMk :: MemRef -> Cont -> Frame
 frameMk envMem cont =
   Frame { frameEnvMem = envMem, frameCont = cont }
-
--- Symbolic Memories
-symMemsEmpty :: SymMems
-symMemsEmpty = SymMems { symMemsList = [] }
-
-symMemsAppend :: MemRef -> SymMems -> SymMems
-symMemsAppend mem smems = smems { symMemsList = symMemsList smems ++ [mem] }
 
 -- Constraint
 constrEmpty :: Constraint
@@ -232,11 +226,11 @@ puresMember id pures = S.member id $ puresSet pures
 -- State
 stateDefault :: State
 stateDefault =
-  State { stStack = stackEmpty
+  State { stRedex = ResultRed memNull
+        , stStack = stackEmpty
         , stHeap = heapEmpty
         , stBaseEnvMem = baseMem
         , stGlobalEnvMem = globalMem
-        , stSymMems = symMemsEmpty
         , stPures = puresEmpty
         , stConstr = constrEmpty
         , stFreshCount = 1

@@ -182,7 +182,7 @@ framesFromPairs exprPairs filePairs =
   let fileMap = M.fromList filePairs in
     map (\(file, expr) ->
         case M.lookup file fileMap of
-          Just mem -> frameMk mem $ EvalCont expr
+          Just mem -> frameMk mem $ ExprCont expr
           _ -> error $ "framesFromPairs " ++ show file ++ "\n" ++ show fileMap)
         exprPairs
 
@@ -205,7 +205,7 @@ rawInitsFromFileWithBase dir file = do
   -- Append a dummy file to make environment a space to inject prims
   let dummyFile = "$primitives"
   let files2 = dummyFile : files
-  let fileExprPairs2 = (dummyFile, Mem memNull) : fileExprPairs
+  let fileExprPairs2 = (dummyFile, Var idNull) : fileExprPairs
   -- Allocate the file environments; dummyFile guaranteed to make space
   let (fileEnvPairs, heap2) = allocFileEnvs files2 envMemOffsetMem heap1
   let frames = framesFromPairs fileExprPairs2 fileEnvPairs

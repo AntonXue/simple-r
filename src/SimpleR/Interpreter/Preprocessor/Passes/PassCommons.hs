@@ -1,4 +1,3 @@
-{-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE FlexibleInstances #-}
 
 module SimpleR.Interpreter.Preprocessor.Passes.PassCommons where

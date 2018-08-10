@@ -26,7 +26,7 @@ argExpr :: Expr -> PassResult Expr
 argExpr (Var id) = PassOkay $ Var id
 
 -- Should be allowed to refer to memories since we do not use PromiseObj
-argExpr (Mem mem) = PassOkay $ Mem mem
+-- argExpr (Mem mem) = PassOkay $ Mem mem
 
 -- Constants are pure
 argExpr (Const const) = PassOkay $ Const const
@@ -80,7 +80,7 @@ argExpr (Tix tick expr) = argExpr expr >>= PassOkay . Tix tick
 
 progExpr :: Expr -> PassResult Expr
 progExpr (Var id) = PassOkay $ Var id
-progExpr (Mem mem) = PassOkay $ Mem mem
+-- progExpr (Mem mem) = PassOkay $ Mem mem
 progExpr (Const const) = PassOkay $ Const const
 progExpr (Seq exprs) = mapM progExpr exprs >>= PassOkay . Seq
 progExpr (LamAbs params expr) = progExpr expr >>= PassOkay . LamAbs params

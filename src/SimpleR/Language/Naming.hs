@@ -28,7 +28,6 @@ instance Renameable Expr where
   rename o n expr =
     case expr of
       Var id -> Var (rename o n id)
-      Mem mem -> Mem mem
       Const const -> Const const
       Seq exprs -> Seq (map (rename o n) exprs)
       LamAbs params expr -> LamAbs (map (rename o n) params) (rename o n expr)

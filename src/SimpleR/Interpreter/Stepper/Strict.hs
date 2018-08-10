@@ -63,7 +63,7 @@ liftVariadics args envMem heap = do
   heap4 <- heapEnvInsert idVariadic refsMem envMem heap3
   return (refsMem, heap4)
 
-unwindToLoopCont :: Stack -> Maybe ((Expr, Expr, LoopState), MemRef, Stack)
+unwindToLoopCont :: Stack -> Maybe ((Expr, Expr, LoopConfig), MemRef, Stack)
 unwindToLoopCont stack = do
   (cont, lEnvMem, stack2) <- stackPopV stack
   case cont of
@@ -77,47 +77,41 @@ unwindToLamBCont stack = do
     LamBCont funMem -> return (funMem, lEnvMem, stack2)
     _ -> unwindToLamBCont stack2
 
-
-
 -- Rules
-
--- rule_Ident :: State -> [State]
--- rule_Ident state = maybeToList $ do
---   (EvalCont (Var id), cEnvMem, cStack2) <- stackPopV $ stStack state
---   let mem = fromMaybe memNull (heapEnvLookupDeep cEnvMem id (stHeap state))
---   let cFrame = frameMk cEnvMem $ ReturnCont mem
---   return $ state { stStack = stackPush cFrame cStack2 }
-
 rule_Ident :: State -> [State]
-rule_Ident state = maybeToList $ do
-  (EvalCont (Var id), cEnvMem, cStack2) <- stackPopV $ stStack state
-  let lookupFun = case stackPopV cStack2 of
-                    Just (LamACont _ _ _ _, _, _) -> heapEnvLookupDeepFun
-                    _ -> heapEnvLookupDeep
-  let mem = fromMaybe memNull (lookupFun cEnvMem id (stHeap state))
-  let cFrame = frameMk cEnvMem $ ReturnCont mem
-  return $ state { stStack = stackPush cFrame cStack2 }
-  
-
-rule_MemRef :: State -> [State]
-rule_MemRef state = maybeToList $ do
-  (EvalCont (Mem mem), cEnvMem, cStack2) <- stackPopV $ stStack state
-  let cFrame = frameMk cEnvMem $ ReturnCont mem
-  return $ state { stStack = stackPush cFrame cStack2 }
+rule_Ident state
+  | EvalRed envMem (Var id) <- stRedex state =
+      let lookupFun = case stackPopV $ stStack state of
+            Just (LamACont _ _ _ _, _, _) -> heapEnvLookupDeepFun
+            _ -> heapEnvLookupDeep in
+      let mem = fromMaybe memNull $ lookupFun envMem id $ stHeap state in
+        [state { stRedex = ResultRed mem }]
+  | otherwise = []
 
 rule_Const :: State -> [State]
-rule_Const state = maybeToList $ do
-  (EvalCont (Const const), cEnvMem, cStack2) <- stackPopV $ stStack state
-  let (mem, heap2) = heapAllocConst const $ stHeap state
-  let cFrame = frameMk cEnvMem $ ReturnCont mem
-  return $ state { stStack = stackPush cFrame cStack2
-                 , stHeap = heap2 }
+rule_Const state
+  | EvalRed envMem (Const const) <- stRedex state =
+      let (mem, heap2) = heapAllocConst const $ stHeap state in
+        [state { stRedex = ResultRed mem
+               , stHeap = heap2 }]
+  | otherwise = []
+
+rule_SeqEmpty :: State -> [State]
+rule_SeqEmpty state
+  | EvalRed envMem (Seq []) <- stRedex state =
+      [state { stRedex = ResultRed memNull }]
+  | otherwise = []
 
 rule_Seq :: State -> [State]
-rule_Seq state = maybeToList $ do
-  (EvalCont (Seq exprs), cEnvMem, cStack2) <- stackPopV $ stStack state
-  let cFrames = map (frameMk cEnvMem . EvalCont) exprs
-  return $ state { stStack = stackPushList cFrames cStack2 }
+rule_Seq state
+  | EvalRed envMem (Seq (expr : exprs)) <- stRedex state =
+      let frames = map (frameMk envMem . ExprCont) exprs in
+      let stack2 = stackPushList frames $ stStack state in
+        [state { stRedex = EvalRed envMem expr
+               , stStack = stack2 }]
+  | otherwise = []
+
+{-
 
 rule_LamAbs :: State -> [State]
 rule_LamAbs state = maybeToList $ do
@@ -252,32 +246,32 @@ rule_While :: State -> [State]
 rule_While state = maybeToList $ do
   (EvalCont (While cond body), cEnvMem, cStack2) <- stackPopV $ stStack state
   let dFrame = frameMk cEnvMem $ EvalCont cond
-  let cFrame = frameMk cEnvMem $ LoopCont cond body LoopStateCond
+  let cFrame = frameMk cEnvMem $ LoopCont cond body LoopConfigCond
   return $ state { stStack = stackPushList [dFrame, cFrame] cStack2 }
 
 rule_WhileTrue :: State -> [State]
 rule_WhileTrue state = maybeToList $ do
   (ReturnCont condMem, _,
-   LoopCont cond body LoopStateCond, cEnvMem,
+   LoopCont cond body LoopConfigCond, cEnvMem,
    cStack2) <- stackPopV2 $ stStack state
   _ <- if isMemConcTrue condMem $ stHeap state then Just True else Nothing
   let bFrame = frameMk cEnvMem $ EvalCont body
-  let cFrame = frameMk cEnvMem $ LoopCont cond body LoopStateBody
+  let cFrame = frameMk cEnvMem $ LoopCont cond body LoopConfigBody
   return $ state { stStack = stackPushList [bFrame, cFrame] cStack2 }
 
 rule_WhileBodyRet :: State -> [State]
 rule_WhileBodyRet state = maybeToList $ do
   (ReturnCont _, _,
-   LoopCont cond body LoopStateBody, cEnvMem,
+   LoopCont cond body LoopConfigBody, cEnvMem,
    cStack2) <- stackPopV2 $ stStack state
   let dFrame = frameMk cEnvMem $ EvalCont cond
-  let cFrame = frameMk cEnvMem $ LoopCont cond body LoopStateCond
+  let cFrame = frameMk cEnvMem $ LoopCont cond body LoopConfigCond
   return $ state { stStack = stackPushList [dFrame, cFrame] cStack2 }
 
 rule_WhileFalse :: State -> [State]
 rule_WhileFalse state = maybeToList $ do
   (ReturnCont condMem, _,
-   LoopCont cond body LoopStateCond, cEnvMem,
+   LoopCont cond body LoopConfigCond, cEnvMem,
    cStack2) <- stackPopV2 $ stStack state
   let cFrame = frameMk cEnvMem $ ReturnCont memNull
   return $ state { stStack = stackPush cFrame cStack2 }
@@ -297,7 +291,7 @@ rule_Next state = maybeToList $ do
   (EvalCont Next, _, cStack2) <- stackPopV $ stStack state
   ((cond, body, _), lEnvMem, lStack) <- unwindToLoopCont cStack2
   let bFrame = frameMk lEnvMem $ EvalCont body
-  let cFrame = frameMk lEnvMem $ LoopCont cond body LoopStateBody
+  let cFrame = frameMk lEnvMem $ LoopCont cond body LoopConfigBody
   return $ state { stStack = stackPushList [bFrame, cFrame] cStack2 }
 
 rule_Return :: State -> [State]
@@ -321,6 +315,7 @@ rule_Blank :: State -> [State]
 rule_Blank _ = []
 
 --
+-}
 
 data Rule =
     RuleIdent
@@ -356,8 +351,10 @@ data Rule =
 
 rulePairs :: [(Rule, State -> [State])]
 rulePairs =
+  undefined
+{-
   [ (RuleIdent, rule_Ident)
-  , (RuleMemRef, rule_MemRef)
+  -- , (RuleMemRef, rule_MemRef)
   , (RuleConst, rule_Const)
   , (RuleSeq, rule_Seq)
   , (RuleLamAbs, rule_LamAbs)
@@ -384,4 +381,5 @@ rulePairs =
   , (RuleReturn, rule_Return)
   , (RuleDiscardRetCont, rule_DiscardRetCont)
   , (RuleBlank, rule_Blank)]
+-}
 

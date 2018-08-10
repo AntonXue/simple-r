@@ -5,6 +5,7 @@ module SimpleR.Interpreter.Preprocessor.SyntaxFromRast
 
 import SimpleR.R.Parser.Syntax
 import SimpleR.Language
+import SimpleR.Interpreter.Commons
 import SimpleR.Interpreter.Natives
 
 class Convertable a b where
@@ -101,7 +102,7 @@ instance Convertable RExpr Expr where
     let (const, int2) = convert rconst int in (Const const, int2)
   convert (RVar rid) int =
     let (id, int2) = convert rid int in (Var id, int2)
-  convert (RNull) int = (Mem memNull, int)
+  convert (RNull) int = (Var idNull, int)
   convert (RUnOp runop rexpr) int =
     let (prim, int2) = convert runop int in
     let (expr, int3) = convert rexpr int2 in
@@ -143,7 +144,7 @@ instance Convertable RExpr Expr where
   convert (RIf rexprc rexprt) int =
     let (exprc, int2) = convert rexprc int in
     let (exprt, int3) = convert rexprt int2 in
-      (If exprc exprt (Mem memNull), int3)
+      (If exprc exprt (Var idNull), int3)
   convert (RIfElse rexprc rexprt rexprf) int =
     let (exprc, int2) = convert rexprc int in
     let (exprt, int3) = convert rexprt int2 in
