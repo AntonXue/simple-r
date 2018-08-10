@@ -14,6 +14,7 @@ data MemRef = MemRef
 data Redex =
     EvalRed MemRef Expr
   | ResultRed MemRef
+  | BlankRed
   deriving (Eq, Show, Read)
 
 data Env = Env

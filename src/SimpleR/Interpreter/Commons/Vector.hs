@@ -9,6 +9,31 @@ import SimpleR.Smt
 data Type = IntTy | DoubleTy | ComplexTy | BoolTy | StringTy
   deriving (Eq, Show, Read)
 
+data SInt =
+    SInt Int
+  | NAInt
+  deriving (Ord, Eq, Show, Read)
+
+data SDouble =
+    SDouble Double
+  | NADouble
+  deriving (Ord, Eq, Show, Read)
+
+data SComplex =
+    SComplex Complex
+  | NAComplex
+  deriving (Eq, Show, Read)
+
+data SString =
+    SString String
+  | NAString
+  deriving (Ord, Eq, Show, Read)
+
+data SBool =
+    SBool Bool
+  | NABool
+  deriving (Ord, Eq, Show, Read)
+
 data Vector =
     IntVec [Int]
   | DoubleVec [Double]
@@ -16,6 +41,7 @@ data Vector =
   | BoolVec [Bool]
   | StringVec [String]
   | SymVec SmtIdent Type
+  | NilVec
   deriving (Eq, Show, Read)
 
 class VecElem a

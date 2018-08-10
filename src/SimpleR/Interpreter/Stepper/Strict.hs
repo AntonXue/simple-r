@@ -30,7 +30,8 @@ splitBinds binds =
     ([], []) binds
 
 isMemConcTrue :: MemRef -> Heap -> Bool
-isMemConcTrue mem heap =
+isMemConcTrue mem heap = error "TODO"
+{-
   case heapLookup mem heap of
     Just (DataObj (VecVal vec) _) ->
       case vec of
@@ -40,6 +41,7 @@ isMemConcTrue mem heap =
         BoolVec (x : _) -> x
         _ -> False
     _ -> False
+-}
 
 exprFromArg :: Arg -> Expr
 exprFromArg (Arg expr) = expr
@@ -111,116 +113,121 @@ rule_Seq state
                , stStack = stack2 }]
   | otherwise = []
 
-{-
-
 rule_LamAbs :: State -> [State]
-rule_LamAbs state = maybeToList $ do
-  (EvalCont (LamAbs params expr), cEnvMem, cStack2)
-    <- stackPopV $ stStack state
-  let fEnv = envAssignPred cEnvMem envEmpty
-  let fEnvObj = DataObj (EnvVal fEnv) attrsEmpty
-  let (fEnvMem, heap2) = heapAlloc fEnvObj $ stHeap state
-  let funObj = DataObj (FunVal fEnvMem params expr) attrsEmpty
-  let (funMem, heap3) = heapAlloc funObj heap2
-  let cFrame = frameMk cEnvMem $ ReturnCont funMem
-  return $ state { stHeap = heap3
-                 , stStack = stackPush cFrame cStack2 }
+rule_LamAbs state
+  | EvalRed envMem (LamAbs params expr) <- stRedex state =
+      let funObj = DataObj (FunVal envMem params expr) attrsEmpty in
+      let (funMem, heap2) = heapAlloc funObj $ stHeap state in
+        [state { stRedex = ResultRed funMem
+               , stHeap = heap2 }]
+  | otherwise = []
 
 rule_LamAppFun :: State -> [State]
-rule_LamAppFun state = maybeToList $ do
-  (EvalCont (LamApp fun args), cEnvMem, cStack2)
-    <- stackPopV $ stStack state
-  let fFrame = frameMk cEnvMem $ EvalCont fun
-  let cFrame = frameMk cEnvMem $ LamACont Nothing [] Nothing args
-  return $ state { stStack = stackPushList [fFrame, cFrame] cStack2 }
+rule_LamAppFun state
+  | EvalRed envMem (LamApp fun args) <- stRedex state =
+      let frame = frameMk envMem $ LamACont Nothing [] Nothing args in
+        [state { stRedex = EvalRed envMem fun
+               , stStack = stackPush frame $ stStack state }]
+  | otherwise = []
 
 rule_LamAppFunRet :: State -> [State]
-rule_LamAppFunRet state = maybeToList $ do
-  (ReturnCont funMem, _,
-   LamACont Nothing [] Nothing args, cEnvMem,
-   cStack2) <- stackPopV2 $ stStack state
-  let lamACont = LamACont (Just funMem) [] Nothing args
-  let cFrame = frameMk cEnvMem lamACont
-  return $ state { stStack = stackPush cFrame cStack2 }
+rule_LamAppFunRet state
+  | ResultRed funMem <- stRedex state
+  , Just (LamACont Nothing [] Nothing args, envMem, stack2)
+      <- stackPopV $ stStack state =
+      let lamACont = LamACont (Just funMem) [] Nothing args in
+      let frame = frameMk envMem lamACont in
+        [state { stRedex = BlankRed
+               , stStack = stackPush frame stack2 }]
+  | otherwise = []
 
 rule_LamAppArg :: State -> [State]
-rule_LamAppArg state = maybeToList $ do
-  (LamACont (Just funMem) dones Nothing (arg : args),
-   cEnvMem, cStack2) <- stackPopV $ stStack state
-  let aFrame = frameMk cEnvMem $ EvalCont $ exprFromArg arg
-  let lamACont = LamACont (Just funMem) dones (Just arg) args
-  let cFrame = frameMk cEnvMem lamACont
-  return $ state { stStack = stackPushList [aFrame, cFrame] cStack2}
+rule_LamAppArg state
+  | BlankRed <- stRedex state
+  , Just (LamACont (Just funMem) dones Nothing (arg : args), envMem, stack2)
+      <- stackPopV $ stStack state =
+      let argExpr = exprFromArg arg in
+      let lamACont = LamACont (Just funMem) dones (Just arg) args in
+      let frame = frameMk envMem lamACont in
+        [state { stRedex = EvalRed envMem argExpr
+               , stStack = stackPush frame stack2 }]
+  | otherwise = []
 
 rule_LamAppArgRet :: State -> [State]
-rule_LamAppArgRet state = maybeToList $ do
-  (ReturnCont argMem, _,
-   LamACont (Just funMem) dones (Just arg) args, cEnvMem,
-   cStack2) <- stackPopV2 $ stStack state
-  let dones2 = dones ++ [(arg, argMem)]
-  let lamACont = LamACont (Just funMem) dones2 Nothing args
-  let cFrame = frameMk cEnvMem lamACont
-  return $ state { stStack = stackPush cFrame cStack2 }
+rule_LamAppArgRet state
+  | ResultRed argMem <- stRedex state
+  , Just (LamACont (Just funMem) dones (Just arg) args, envMem, stack2)
+      <- stackPopV $ stStack state =
+      let dones2 = dones ++ [(arg, argMem)] in
+      let lamACont = LamACont (Just funMem) dones2 Nothing args in
+      let frame = frameMk envMem lamACont in
+        [state { stRedex = BlankRed
+               , stStack = stackPush frame stack2 }]
+
+  | otherwise = []
 
 rule_LamAppEnter :: State -> [State]
-rule_LamAppEnter state = maybeToList $ do
-  (LamACont (Just funMem) dones Nothing [], cEnvMem, cStack2)
-    <- stackPopV $ stStack state
-  -- Get out the things in the heap
-  DataObj (FunVal fEnvMem params body) _ <- heapLookup funMem $ stHeap state
-  DataObj (EnvVal cEnv) _ <- heapLookup cEnvMem $ stHeap state
-  (binds, vars) <- matchLamApp params dones cEnv $ stHeap state
-  -- Bind the variadic sand memBinds first
-  let (memBinds, exprBinds) = splitBinds binds
-  (_, heap2) <- liftVariadics vars fEnvMem $ stHeap state
-  heap3 <- heapEnvInsertList memBinds fEnvMem heap2
-  -- Now add the expression bindings before the body thing
-  let aFrames = map (\(id, expr) ->
-                 frameMk fEnvMem $ EvalCont $ Assign (Var id) expr) exprBinds
-  let fFrame = frameMk fEnvMem $ EvalCont body
-  let cFrame = frameMk cEnvMem $ LamBCont funMem
-  return $
-    state { stStack = stackPushList (aFrames ++ [fFrame, cFrame]) cStack2
-          , stHeap = heap3 }
+rule_LamAppEnter state
+  | BlankRed <- stRedex state
+  , Just (LamACont (Just funMem) dones Nothing [], envMem, stack2)
+      <- stackPopV $ stStack state
+  , Just (DataObj (FunVal funPredEnvMem params body) _)
+      <- heapLookup funMem $ stHeap state
+  , Just (DataObj (EnvVal env) _) <- heapLookup envMem $ stHeap state =
+    maybeToList $ do
+      -- Make a new environment for the function
+      let funEnv = envAssignPred funPredEnvMem envEmpty
+      let funEnvObj = DataObj (EnvVal funEnv) attrsEmpty
+      let (funEnvMem, heap2) = heapAlloc funEnvObj $ stHeap state
+      -- Do some matching
+      -- matchLamApp should happen in the current environment
+      (binds, variadics) <- matchLamApp params dones env heap2
+      let (memBinds, exprBinds) = splitBinds binds
+      (_, heap3) <- liftVariadics variadics funEnvMem heap2
+      heap4 <- heapEnvInsertList memBinds funEnvMem heap3
+      -- Make the continuations for assignments
+      let aConts = map (\(id, ex) -> ExprCont $ Assign (Var id) ex) exprBinds
+      let aFrames = map (frameMk funEnvMem) aConts
+      -- Body frame
+      let bFrame = frameMk funEnvMem $ ExprCont body
+      let lamBFrame = frameMk envMem $ LamBCont funMem
+      let stack3 = stackPushList (aFrames ++ [bFrame, lamBFrame]) stack2
+      return $ state { stRedex = ResultRed memNull -- In case nothing happens
+                     , stStack = stack3
+                     , stHeap = heap4 }
+  | otherwise = []
 
 rule_LamAppRet :: State -> [State]
-rule_LamAppRet state = maybeToList $ do
-  (ReturnCont mem, _,
-   LamBCont _, cEnvMem,
-   cStack2) <- stackPopV2 $ stStack state
-  let cFrame = frameMk cEnvMem $ ReturnCont mem
-  return $ state { stStack = stackPush cFrame cStack2 }
+rule_LamAppRet state
+  | ResultRed mem <- stRedex state
+  , Just (LamBCont _, _, stack2) <- stackPopV $ stStack state =
+      [state { stRedex = ResultRed mem
+             , stStack = stack2 }]
+  | otherwise = []
 
 rule_NativeLamApp :: State -> [State]
-rule_NativeLamApp state =
-  case stackPopV $ stStack state of
-    Just (EvalCont (NativeLamApp _ _), _, _) -> nativeCall state
-    _ -> []
+rule_NativeLamApp state
+  | EvalRed envMem (NativeLamApp _ _) <- stRedex state = nativeCall state
+  | otherwise = []
 
--- TODO: COPYING
 rule_AssignId :: State -> [State]
-rule_AssignId state = maybeToList $ do
-  (EvalCont (Assign (Var id) expr), cEnvMem, cStack2)
-    <- stackPopV $ stStack state
-  let eFrame = frameMk cEnvMem $ EvalCont expr
-  let cFrame = frameMk cEnvMem $ AssignCont id
-  return $ state { stStack = stackPushList [eFrame, cFrame] cStack2 }
-
-rule_AssignStr :: State -> [State]
-rule_AssignStr state = maybeToList $ do
-  (EvalCont (Assign (Const (StringConst str)) e), cEnvMem, cStack2)
-    <- stackPopV $ stStack state
-  let cFrame = frameMk cEnvMem $ EvalCont $ Assign (Var $ idFromString str) e
-  return $ state { stStack = stackPush cFrame cStack2 }
+rule_AssignId state
+  | EvalRed envMem (Assign (Var id) expr) <- stRedex state =
+      let frame = frameMk envMem $ AssignCont id in
+        [state { stRedex = EvalRed expr
+               , stStack = stackPush frame $ stStack state }]
+  | otherwise = []
 
 rule_AssignRet :: State -> [State]
-rule_AssignRet state = maybeToList $ do
-  (ReturnCont mem, _, AssignCont id, cEnvMem, cStack2)
-    <- stackPopV2 $ stStack state
-  heap2 <- heapEnvInsert id mem cEnvMem $ stHeap state
-  let cFrame = frameMk cEnvMem $ ReturnCont mem
-  return $ state { stHeap = heap2
-                 , stStack = stackPush cFrame cStack2 }
+rule_AssignRet state
+  | ResultRed mem <- stRedex state
+  , Just (AssignCont id, envMem, stack2) <- stackPopV $ stStack state =
+      maybeToList $ do
+      let heap2 <- heapEnvInsert id mem envMem $ stHeap state
+      error "TODO: COPYING"
+  | otherwise = []
+
+{-
 
 rule_If :: State -> [State]
 rule_If state = maybeToList $ do
