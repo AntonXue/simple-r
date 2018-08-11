@@ -129,10 +129,10 @@ sIntFromSString (SString str) =
 --     Just int -> SInt int
 --     Nothing -> NAInt -- Correct?
 
-sIntFromBool :: SBool -> SInt
-sIntFromBool (NABool) = NAInt
-sIntFromBool (SBool True) = SInt 1
-sIntFromBool (SBool False) = SInt 0
+sIntFromSBool :: SBool -> SInt
+sIntFromSBool (NABool) = NAInt
+sIntFromSBool (SBool True) = SInt 1
+sIntFromSBool (SBool False) = SInt 0
 
 -- SDouble
 sDoubleFromSInt :: SInt -> SDouble
@@ -225,23 +225,36 @@ sBoolFromSBool sbool = sbool
 
 
 vecToType :: Vector -> Type -> Vector
-vecToType = undefined
-{-
-vecToType (IntVec xs) ty
+vecToType (IntVec xs) IntTy = IntVec $ map sIntFromSInt xs
+vecToType (IntVec xs) DoubleTy = DoubleVec $ map sDoubleFromSInt xs
+vecToType (IntVec xs) ComplexTy = ComplexVec $ map sComplexFromSInt xs
+vecToType (IntVec xs) StringTy = StringVec $ map sStringFromSInt xs
+vecToType (IntVec xs) BoolTy = BoolVec $ map sBoolFromSInt xs
 
-vecToType (DoubleVec
+vecToType (DoubleVec xs) IntTy = IntVec $ map sIntFromSDouble xs
+vecToType (DoubleVec xs) DoubleTy = DoubleVec $ map sDoubleFromSDouble xs
+vecToType (DoubleVec xs) ComplexTy = ComplexVec $ map sComplexFromSDouble xs
+vecToType (DoubleVec xs) StringTy = StringVec $ map sStringFromSDouble xs
+vecToType (DoubleVec xs) BoolTy = BoolVec $ map sBoolFromSDouble xs
 
+vecToType (ComplexVec xs) IntTy = IntVec $ map sIntFromSComplex xs
+vecToType (ComplexVec xs) DoubleTy = DoubleVec $ map sDoubleFromSComplex xs
+vecToType (ComplexVec xs) ComplexTy = ComplexVec $ map sComplexFromSComplex xs
+vecToType (ComplexVec xs) StringTy = StringVec $ map sStringFromSComplex xs
+vecToType (ComplexVec xs) BoolTy = BoolVec $ map sBoolFromSComplex xs
 
-vecToType (DoubleVec
+vecToType (StringVec xs) IntTy = IntVec $ map sIntFromSString xs
+vecToType (StringVec xs) DoubleTy = DoubleVec $ map sDoubleFromSString xs
+vecToType (StringVec xs) ComplexTy = ComplexVec $ map sComplexFromSString xs
+vecToType (StringVec xs) StringTy = StringVec $ map sStringFromSString xs
+vecToType (StringVec xs) BoolTy = BoolVec $ map sBoolFromSString xs
 
+vecToType (BoolVec xs) IntTy = IntVec $ map sIntFromSBool xs
+vecToType (BoolVec xs) DoubleTy = DoubleVec $ map sDoubleFromSBool xs
+vecToType (BoolVec xs) ComplexTy = ComplexVec $ map sComplexFromSBool xs
+vecToType (BoolVec xs) StringTy = StringVec $ map sStringFromSBool xs
+vecToType (BoolVec xs) BoolTy = BoolVec $ map sBoolFromSBool xs
 
-vecToType (DoubleVec
-
-vecToType (DoubleVec
-
-vecToType (DoubleVec
-
-vecToType (SymVec 
-vecToType (NilVec) _ = NilveC
--}
+vecToType (SymVec sym _) ty = SymVec sym ty
+vecToType (NilVec) _ = NilVec
 
