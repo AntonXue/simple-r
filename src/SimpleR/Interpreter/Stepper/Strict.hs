@@ -9,6 +9,7 @@ import SimpleR.Language
 import SimpleR.Interpreter.Commons
 import SimpleR.Interpreter.Stepper.ParamArgMatching
 import SimpleR.Interpreter.Natives
+import SimpleR.Smt
 
 -- Helper functions
 splitEithers :: [Either a b] -> ([a], [b])
@@ -29,8 +30,8 @@ splitBinds binds =
         Right expr -> (accL, accR ++ [(id, expr)]))
     ([], []) binds
 
-isMemConcTrue :: MemRef -> Heap -> Bool
-isMemConcTrue mem heap = error "TODO"
+isMemConcTrue :: MemRef -> Heap -> Maybe Bool
+isMemConcTrue mem heap = error "TODO: IMPLEMENT CONC"
 {-
   case heapLookup mem heap of
     Just (DataObj (VecVal vec) _) ->
@@ -42,6 +43,10 @@ isMemConcTrue mem heap = error "TODO"
         _ -> False
     _ -> False
 -}
+
+symMemId :: MemRef -> Heap -> Maybe SmtIdent
+symMemId = error "TODO: IMPLEMENT SYM"
+
 
 exprFromArg :: Arg -> Expr
 exprFromArg (Arg expr) = expr
@@ -214,7 +219,7 @@ rule_AssignId :: State -> [State]
 rule_AssignId state
   | EvalRed envMem (Assign (Var id) expr) <- stRedex state =
       let frame = frameMk envMem $ AssignCont id in
-        [state { stRedex = EvalRed expr
+        [state { stRedex = EvalRed envMem expr
                , stStack = stackPush frame $ stStack state }]
   | otherwise = []
 
@@ -223,19 +228,41 @@ rule_AssignRet state
   | ResultRed mem <- stRedex state
   , Just (AssignCont id, envMem, stack2) <- stackPopV $ stStack state =
       maybeToList $ do
-      let heap2 <- heapEnvInsert id mem envMem $ stHeap state
+      heap2 <- heapEnvInsert id mem envMem $ stHeap state
       error "TODO: COPYING"
   | otherwise = []
 
-{-
-
 rule_If :: State -> [State]
-rule_If state = maybeToList $ do
-  (EvalCont (If cond true false), cEnvMem, cStack2)
-    <- stackPopV $ stStack state
-  let aFrame = frameMk cEnvMem $ EvalCont cond
-  let cFrame = frameMk cEnvMem $ BranchCont true false
-  return $ state { stStack = stackPushList [aFrame, cFrame] cStack2 }
+rule_If state
+  | EvalRed envMem (If exprC exprT exprF) <- stRedex state =
+      let frame = frameMk envMem $ BranchCont exprT exprF in
+        [state { stRedex = EvalRed envMem exprC
+               , stStack = stackPush frame $ stStack state }]
+  | otherwise = []
+
+rule_IfRet :: State -> [State]
+rule_IfRet state
+  | ResultRed mem <- stRedex state
+  , Just (BranchCont exprT exprF, envMem, stack2)
+      <- stackPopV $ stStack state
+  , Just memVal <- isMemConcTrue mem $ stHeap state =
+      let expr = if memVal then exprT else exprF in
+        [state { stRedex = EvalRed envMem expr
+               , stStack = stack2 }]
+  | otherwise = []
+
+rule_IfRetSym :: State -> [State]
+rule_IfRetSym state
+  | ResultRed mem <- stRedex state
+  , Just (BranchCont exprT exprF, envMem, stack2)
+      <- stackPopV $ stStack state
+  , Just sym <- symMemId mem $ stHeap state =
+      error "IMPLEMENT THIS THING"
+  | otherwise = []
+
+
+
+{-
 
 rule_IfRet :: State -> [State]
 rule_IfRet state = maybeToList $ do
