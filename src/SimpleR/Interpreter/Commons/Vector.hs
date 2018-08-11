@@ -6,6 +6,7 @@ module SimpleR.Interpreter.Commons.Vector where
 import SimpleR.Language
 import SimpleR.Smt
 
+
 data Type = IntTy | DoubleTy | ComplexTy | BoolTy | StringTy
   deriving (Eq, Show, Read)
 
@@ -35,35 +36,23 @@ data SBool =
   deriving (Ord, Eq, Show, Read)
 
 data Vector =
-    IntVec [Int]
-  | DoubleVec [Double]
-  | ComplexVec [Complex]
-  | BoolVec [Bool]
-  | StringVec [String]
+    IntVec [SInt]
+  | DoubleVec [SDouble]
+  | ComplexVec [SComplex]
+  | BoolVec [SBool]
+  | StringVec [SString]
   | SymVec SmtIdent Type
   | NilVec
   deriving (Eq, Show, Read)
 
-class VecElem a
-
-
-
-data Vector2 a where
-  IntVec2 :: [Int] -> Vector2 Int
-  DoubleVec2 :: [Double] -> Vector2 Double
-  ComplexVec2 :: [Complex] -> Vector2 Complex
-  BoolVec2 :: [Bool] -> Vector2 Bool
-  StringVec2 :: [String] -> Vector2 String
-  SymVec2 :: (VecElem a) => SmtIdent -> a -> Vector2 a
-
-
 -- Vector conversion
 vecFromConst :: Const -> Vector
-vecFromConst (IntConst int) = IntVec [int]
-vecFromConst (DoubleConst double) = DoubleVec [double]
-vecFromConst (ComplexConst complex) = ComplexVec [complex]
-vecFromConst (BoolConst bool) = BoolVec [bool]
-vecFromConst (StringConst str) = StringVec [str]
+vecFromConst (IntConst int) = IntVec [SInt int]
+vecFromConst (DoubleConst double) = DoubleVec [SDouble double]
+vecFromConst (ComplexConst complex) = ComplexVec [SComplex complex]
+vecFromConst (BoolConst bool) = BoolVec [SBool bool]
+vecFromConst (StringConst str) = StringVec [SString str]
+vecFroMConst (NaConst) = NilVec
 
 vecLength :: Vector -> Int
 vecLength (IntVec xs) = length xs
@@ -81,7 +70,24 @@ vecType (BoolVec _) = BoolTy
 vecType (StringVec _) = StringTy
 vecType (SymVec _ ty) = ty
 
+snip :: Int -> [a] -> [a]
+snip n xs = take n $ concat $ repeat xs
 
-vecResize :: Vector -> Int -> Vector
-vecResize = undefined
+vecResize :: Int -> Vector -> Vector
+vecResize n (IntVec (x : xs)) = IntVec $ snip n (x : xs)
+vecResize n (DoubleVec (x : xs)) = DoubleVec $ snip n (x : xs)
+vecResize n (ComplexVec (x : xs)) = ComplexVec $ snip n (x : xs)
+vecResize n (StringVec (x : xs)) = StringVec $ snip n (x : xs)
+vecResize n (BoolVec (x : xs)) = BoolVec $ snip n (x : xs)
+vecResize _ (IntVec []) = error $ "vecLength: IntVec has length 0"
+vecResize _ (DoubleVec []) = error $ "vecLength: DoubleVec has length 0"
+vecResize _ (ComplexVec []) = error $ "vecLength: ComplexVec has length 0"
+vecResize _ (StringVec []) = error $ "vecLength: StringVec has length 0"
+vecResize _ (BoolVec []) = error $ "vecLength: BoolVec has length 0"
+vecResize _ (SymVec _ _) = error $ "vecLength: called with SymVec"
+vecResize _ (NilVec) = error $ "vecLength: called with NilVec"
+
+idFromSString :: SString -> Ident
+idFromSString NAString = idFromString "NA"
+idFromSString (SString str) = idFromString str
 

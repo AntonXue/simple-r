@@ -40,6 +40,9 @@ idVariadic = idFromString "..."
 idNull :: Ident
 idNull = idFromString "NULL"
 
+idAttrsNames :: Ident
+idAttrsNames = idFromString "names"
+
 idFresh :: State -> (Ident, State)
 idFresh = undefined
 
@@ -179,24 +182,24 @@ heapCopyValue (EnvVal env) heap = do
 attrsEmpty :: Attributes
 attrsEmpty = Attributes { attrsMap = M.empty }
 
-attrsLookup :: String -> Attributes -> Maybe MemRef
-attrsLookup str attrs = M.lookup str $ attrsMap attrs
+attrsLookup :: Ident -> Attributes -> Maybe MemRef
+attrsLookup id attrs = M.lookup id $ attrsMap attrs
 
-attrsInsert :: String -> MemRef -> Attributes -> Attributes
-attrsInsert str mem attrs = attrsInsertList [(str, mem)] attrs
+attrsInsert :: Ident -> MemRef -> Attributes -> Attributes
+attrsInsert id mem attrs = attrsInsertList [(id, mem)] attrs
 
-attrsInsertList :: [(String, MemRef)] -> Attributes -> Attributes
+attrsInsertList :: [(Ident, MemRef)] -> Attributes -> Attributes
 attrsInsertList kvs attrs =
   attrs { attrsMap = mapInsertList kvs $ attrsMap attrs }
 
-attrsDelete :: String -> Attributes -> Attributes
-attrsDelete str attrs = attrsDeleteList [str] attrs
+attrsDelete :: Ident -> Attributes -> Attributes
+attrsDelete id attrs = attrsDeleteList [id] attrs
 
-attrsDeleteList :: [String] -> Attributes -> Attributes
-attrsDeleteList strs attrs =
-  attrs { attrsMap = mapDeleteList strs $ attrsMap attrs }
+attrsDeleteList :: [Ident] -> Attributes -> Attributes
+attrsDeleteList ids attrs =
+  attrs { attrsMap = mapDeleteList ids $ attrsMap attrs }
 
-attrsBinds :: Attributes -> [(String, MemRef)]
+attrsBinds :: Attributes -> [(Ident, MemRef)]
 attrsBinds attrs = M.toList $ attrsMap attrs
 
 -- Stack

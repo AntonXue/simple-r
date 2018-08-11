@@ -21,16 +21,16 @@ pullArgs ((Named id expr, mem) : args) heap
 pullArgs ((VarArg, mem) : args) heap
   | Just args2 <- pullArgs args heap
   , Just (DataObj (RefsVal varMems) attrs) <- heapLookup mem heap
-  , Just nameMem <- attrsLookup "name" attrs
-  , Just (DataObj (VecVal (StringVec nameStrs)) _) <- heapLookup nameMem heap
-  , length nameStrs == length varMems =
-      let strMemPairs = zip nameStrs varMems in
+  , Just nameMem <- attrsLookup idAttrsNames attrs
+  , Just (DataObj (VecVal (StringVec nameSStrs)) _) <- heapLookup nameMem heap
+  , length nameSStrs == length varMems =
+      let strMemPairs = zip nameSStrs varMems in
       let idMemPairs =
             map (\(n, m) ->
-                  if n == "" then
+                  if n == SString "" then
                     Left m
                   else
-                    Right (idFromString n, m)) strMemPairs in
+                    Right (idFromSString n, m)) strMemPairs in
         Just $ idMemPairs ++ args2
   | otherwise = Nothing
 

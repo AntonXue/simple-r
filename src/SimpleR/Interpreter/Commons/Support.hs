@@ -40,7 +40,7 @@ data Value =
   deriving (Eq, Show, Read)
 
 data Attributes = Attributes
-  { attrsMap :: M.Map String MemRef
+  { attrsMap :: M.Map Ident MemRef
   } deriving (Eq, Show, Read)
 
 data Constraint = Constraint
