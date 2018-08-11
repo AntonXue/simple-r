@@ -260,96 +260,120 @@ rule_IfRetSym state
       error "IMPLEMENT THIS THING"
   | otherwise = []
 
-
-
-{-
-
-rule_IfRet :: State -> [State]
-rule_IfRet state = maybeToList $ do
-  (ReturnCont condMem, _,
-   BranchCont true false, cEnvMem,
-   cStack2) <- stackPopV2 $ stStack state
-  let branch = if isMemConcTrue condMem $ stHeap state then true else false
-  let cFrame = frameMk cEnvMem $ EvalCont branch
-  return $ state { stStack = stackPush cFrame cStack2 }
-
-rule_IfRetSym :: State -> [State]
-rule_IfRetSym state = undefined
-
 rule_While :: State -> [State]
-rule_While state = maybeToList $ do
-  (EvalCont (While cond body), cEnvMem, cStack2) <- stackPopV $ stStack state
-  let dFrame = frameMk cEnvMem $ EvalCont cond
-  let cFrame = frameMk cEnvMem $ LoopCont cond body LoopConfigCond
-  return $ state { stStack = stackPushList [dFrame, cFrame] cStack2 }
+rule_While state
+  | EvalRed envMem (While cond body) <- stRedex state =
+      let frame = frameMk envMem $ LoopCont cond body LoopConfigCond in
+        [state { stRedex = EvalRed envMem cond
+               , stStack = stackPush frame $ stStack state }]
+  | otherwise = []
 
 rule_WhileTrue :: State -> [State]
-rule_WhileTrue state = maybeToList $ do
-  (ReturnCont condMem, _,
-   LoopCont cond body LoopConfigCond, cEnvMem,
-   cStack2) <- stackPopV2 $ stStack state
-  _ <- if isMemConcTrue condMem $ stHeap state then Just True else Nothing
-  let bFrame = frameMk cEnvMem $ EvalCont body
-  let cFrame = frameMk cEnvMem $ LoopCont cond body LoopConfigBody
-  return $ state { stStack = stackPushList [bFrame, cFrame] cStack2 }
+rule_WhileTrue state
+  | ResultRed mem <- stRedex state
+  , Just (LoopCont cond body LoopConfigCond, envMem, stack2)
+      <- stackPopV $ stStack state
+  , Just True <- isMemConcTrue mem $ stHeap state =
+      let frame = frameMk envMem $ LoopCont cond body LoopConfigBody in
+        [state { stRedex = EvalRed envMem body
+               , stStack = stackPush frame stack2 }]
+  | otherwise = []
 
 rule_WhileBodyRet :: State -> [State]
-rule_WhileBodyRet state = maybeToList $ do
-  (ReturnCont _, _,
-   LoopCont cond body LoopConfigBody, cEnvMem,
-   cStack2) <- stackPopV2 $ stStack state
-  let dFrame = frameMk cEnvMem $ EvalCont cond
-  let cFrame = frameMk cEnvMem $ LoopCont cond body LoopConfigCond
-  return $ state { stStack = stackPushList [dFrame, cFrame] cStack2 }
+rule_WhileBodyRet state
+  | ResultRed mem <- stRedex state
+  , Just (LoopCont cond body LoopConfigBody, envMem, stack2)
+      <- stackPopV $ stStack state =
+      let frame = frameMk envMem $ LoopCont cond body LoopConfigCond in
+        [state { stRedex = EvalRed envMem cond
+               , stStack = stackPush frame stack2 }]
+  | otherwise = []
 
 rule_WhileFalse :: State -> [State]
-rule_WhileFalse state = maybeToList $ do
-  (ReturnCont condMem, _,
-   LoopCont cond body LoopConfigCond, cEnvMem,
-   cStack2) <- stackPopV2 $ stStack state
-  let cFrame = frameMk cEnvMem $ ReturnCont memNull
-  return $ state { stStack = stackPush cFrame cStack2 }
+rule_WhileFalse state
+  | ResultRed mem <- stRedex state
+  , Just (LoopCont cont body LoopConfigCond, envMem, stack2)
+      <- stackPopV $ stStack state
+  , Just False <- isMemConcTrue mem $ stHeap state =
+      [state { stRedex = ResultRed memNull
+             , stStack = stack2 }]
+  | otherwise = []
 
 rule_WhileSym :: State -> [State]
-rule_WhileSym state = undefined
+rule_WhileSym state
+  | ResultRed mem <- stRedex state
+  , Just (LoopCont cont body LoopConfigCond, envMem, stack2)
+      <- stackPopV $ stStack state
+  , Just sym <- symMemId mem $ stHeap state =
+      error "WHILE FALSE"
+  | otherwise = []
 
-rule_Break :: State -> [State]
-rule_Break state = maybeToList $ do
-  (EvalCont Break, _, cStack2) <- stackPopV $ stStack state
-  ((cond, body, _), lEnvMem, lStack) <- unwindToLoopCont cStack2
-  let cFrame = frameMk lEnvMem $ ReturnCont memNull
-  return $ state { stStack = stackPush cFrame cStack2 }
+rule_BreakStop :: State -> [State]
+rule_BreakStop state
+  | EvalRed envMem Break <- stRedex state
+  , Just (LoopCont _ _ _, _, stack2) <- stackPopV $ stStack state =
+      [state { stRedex = ResultRed memNull
+             , stStack = stack2 }]
+  | otherwise = []
 
-rule_Next :: State -> [State]
-rule_Next state = maybeToList $ do
-  (EvalCont Next, _, cStack2) <- stackPopV $ stStack state
-  ((cond, body, _), lEnvMem, lStack) <- unwindToLoopCont cStack2
-  let bFrame = frameMk lEnvMem $ EvalCont body
-  let cFrame = frameMk lEnvMem $ LoopCont cond body LoopConfigBody
-  return $ state { stStack = stackPushList [bFrame, cFrame] cStack2 }
+rule_BreakGo :: State -> [State]
+rule_BreakGo state
+  | EvalRed envMem Break <- stRedex state
+  , Just (cont, _, stack2) <- stackPopV $ stStack state =
+      let go = case cont of
+                  ExprCont _ -> True
+                  BranchCont _ _ -> True
+                  _ -> False in
+        [state { stRedex = EvalRed envMem Break
+               , stStack = stack2 }]
+  | otherwise = []
 
-rule_Return :: State -> [State]
-rule_Return state = maybeToList $ do
-  (EvalCont (Return expr), cEnvMem, cStack2) <- stackPopV $ stStack state
-  (funMem, lEnvMem, fStack) <- unwindToLamBCont cStack2
-  let rFrame = frameMk cEnvMem $ EvalCont expr
-  let cFrame = frameMk lEnvMem $ LamBCont funMem
-  return $ state { stStack = stackPushList [rFrame, cFrame] fStack }
+rule_NextStop :: State -> [State]
+rule_NextStop state
+  | EvalRed envMem Next <- stRedex state
+  , Just (LoopCont cond body _, envMem, stack2) <- stackPopV $ stStack state =
+      let frame = frameMk envMem $ LoopCont cond body LoopConfigCond in
+        [state { stRedex = EvalRed envMem cond
+               , stStack = stackPush frame stack2 }]
+  | otherwise = []
 
-rule_DiscardRetCont :: State -> [State]
-rule_DiscardRetCont state = maybeToList $ do
-  (ReturnCont _, _, cStack2) <- stackPopV $ stStack state
-  case stackPopV cStack2 of
-    Just (EvalCont _, _, _) -> return $ state { stStack = cStack2 }
-    Just (ReturnCont _, _, _) -> return $ state { stStack = cStack2 }
-    Just (SeqCont _, _, _) -> return $ state { stStack = cStack2 }
-    _ -> Nothing
-  
+rule_NextGo :: State -> [State]
+rule_NextGo state
+  | EvalRed envMem Next <- stRedex state
+  , Just (cont, _, stack2) <- stackPopV $ stStack state =
+      let go = case cont of
+                  ExprCont _ -> True
+                  BranchCont _ _ -> True
+                  _ -> False in
+        [state { stRedex = EvalRed envMem Next
+               , stStack = stack2 }]
+  | otherwise = []
+
+rule_ReturnStop :: State -> [State]
+rule_ReturnStop state
+  | EvalRed envMem (Return expr) <- stRedex state
+  , Just (LamBCont funMem, lamEnvMem, stack2) <- stackPopV $ stStack state =
+      let frame = frameMk lamEnvMem $ LamBCont funMem in
+        [state { stRedex = EvalRed envMem expr
+               , stStack = stackPush frame stack2 }]
+  | otherwise = []
+
+rule_ReturnGo :: State -> [State]
+rule_ReturnGo state
+  | EvalRed envMem (Return expr) <- stRedex state
+  , Just (cont, _, stack2) <- stackPopV $ stStack state =
+      let go = case cont of
+                  ExprCont _ -> True
+                  BranchCont _ _ -> True
+                  LoopCont _ _ _ -> True
+                  _ -> False in
+        [state { stRedex = EvalRed envMem (Return expr)
+               , stStack = stack2 }]
+  | otherwise = []
+
 rule_Blank :: State -> [State]
 rule_Blank _ = []
 
---
--}
 
 data Rule =
     RuleIdent
