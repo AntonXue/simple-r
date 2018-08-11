@@ -106,7 +106,6 @@ heapEnvLookupDeepFun envMem id heap
 
   | otherwise = Nothing
   
-
 heapInsert :: MemRef -> HeapObj -> Heap -> Heap
 heapInsert mem hobj heap = heapInsertList [(mem, hobj)] heap
 
@@ -151,7 +150,13 @@ heapEnvInsertList kvs envMem heap
   | otherwise = Nothing
 
 heapCopy :: MemRef -> Heap -> Maybe (MemRef, Heap)
-heapCopy mem heap = undefined
+heapCopy mem heap
+  | Just (DataObj val attrs) <- heapLookup mem heap = do
+      (kvs2, heap2) <- heapCopyKeyMems (attrsBinds attrs) heap
+      (val2, heap3) <- heapCopyValue val heap2
+      let attrs2 = attrsInsertList kvs2 attrsEmpty
+      return $ heapAlloc (DataObj val2 attrs2) heap3
+  | otherwise = Nothing
 
 heapCopyKeyMems ::
   (Ord k) => [(k, MemRef)] -> Heap -> Maybe ([(k, MemRef)], Heap)
@@ -162,7 +167,13 @@ heapCopyKeyMems ((key, mem) : keyMems) heap = do
   return $ ((key, mem2) : keyMems2, heap3)
 
 heapCopyValue :: Value -> Heap -> Maybe (Value, Heap)
-heapCopyValue = undefined
+heapCopyValue (VecVal vec) heap = Just $ (VecVal vec, heap)
+heapCopyValue (FunVal envMem params body) heap =
+  Just $ (FunVal envMem params body, heap)
+heapCopyValue (EnvVal env) heap = do
+  (kvs, heap2) <- heapCopyKeyMems (envBinds env) heap
+  let env2 = envAssignPred (envPredMem env) $ envInsertList kvs envEmpty
+  return (EnvVal env2, heap2)
 
 -- Attributes
 attrsEmpty :: Attributes
