@@ -14,24 +14,25 @@ bindsOfDefaults ((Default id expr) : ps) = (id, expr) : bindsOfDefaults ps
 -- Flattens the variadics.
 pullArgs :: [(Arg, MemRef)] -> Heap -> Maybe [Either MemRef (Ident, MemRef)]
 pullArgs [] _ = Just []
-pullArgs (arg : args) heap = do
-  args2 <- pullArgs args heap
-  case arg of
-    (Arg _, mem) -> return $ (Left mem) : args2
-    (Named id expr, mem) -> return $ (Right (id, mem)) : args2
-    (VarArg, mem) -> do
-      (DataObj (RefsVal varMems) attrs) <- heapLookup mem heap
-      nameMem <- attrsLookup "name" attrs
-      (DataObj (VecVal (StringVec nameStrs)) _) <- heapLookup nameMem heap
-      if length nameStrs == length varMems then
-        let strMemPairs = zip nameStrs varMems in
-        let idMemPairs =
-              map (\(n, m) -> if n == ""
-                    then Left m
-                    else Right (idFromString n, m)) strMemPairs in
-          return $ idMemPairs ++ args2
-      else
-        Nothing
+pullArgs ((Arg _, mem) : args) heap
+  | Just args2 <- pullArgs args heap = Just $ (Left mem) : args2
+pullArgs ((Named id expr, mem) : args) heap
+  | Just args2 <- pullArgs args heap = Just $ (Right (id, mem)) : args2
+pullArgs ((VarArg, mem) : args) heap
+  | Just args2 <- pullArgs args heap
+  , Just (DataObj (RefsVal varMems) attrs) <- heapLookup mem heap
+  , Just nameMem <- attrsLookup "name" attrs
+  , Just (DataObj (VecVal (StringVec nameStrs)) _) <- heapLookup nameMem heap
+  , length nameStrs == length varMems =
+      let strMemPairs = zip nameStrs varMems in
+      let idMemPairs =
+            map (\(n, m) ->
+                  if n == "" then
+                    Left m
+                  else
+                    Right (idFromString n, m)) strMemPairs in
+        Just $ idMemPairs ++ args2
+  | otherwise = Nothing
 
 -- Remove the param that is used based on the Ident.
 dropUsed :: Ident -> [Param] -> [Param]

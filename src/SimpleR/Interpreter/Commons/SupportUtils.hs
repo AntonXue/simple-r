@@ -79,26 +79,33 @@ heapLookup :: MemRef -> Heap -> Maybe HeapObj
 heapLookup mem heap = M.lookup mem $ heapMap heap
 
 heapEnvLookup :: MemRef -> Ident -> Heap -> Maybe MemRef
-heapEnvLookup envMem id heap = do
-  DataObj (EnvVal env) _ <- heapLookup envMem heap
-  envLookup id env
+heapEnvLookup envMem id heap
+  | Just (DataObj (EnvVal env) _) <- heapLookup envMem heap =
+      envLookup id env
+  | otherwise = Nothing
 
 heapEnvLookupDeep :: MemRef -> Ident -> Heap -> Maybe MemRef
-heapEnvLookupDeep envMem id heap = do
-  DataObj (EnvVal env) _ <- heapLookup envMem heap
-  case envLookup id env of
-    Just mem -> return mem
-    _ -> heapEnvLookupDeep (envPredMem env) id heap
+heapEnvLookupDeep envMem id heap
+  | Just (DataObj (EnvVal env) _) <- heapLookup envMem heap
+  , Just mem <- envLookup id env = Just mem
+
+  | Just (DataObj (EnvVal env) _) <- heapLookup envMem heap
+  , Nothing <- envLookup id env =
+      heapEnvLookup (envPredMem env) id heap
+
+  | otherwise = Nothing
 
 heapEnvLookupDeepFun :: MemRef -> Ident -> Heap -> Maybe MemRef
-heapEnvLookupDeepFun envMem id heap = do
-  DataObj (EnvVal env) _ <- heapLookup envMem heap
-  case envLookup id env of
-    Just mem ->
-      case heapLookup mem heap of
-        Just (DataObj (FunVal _ _ _) _) -> return mem
+heapEnvLookupDeepFun envMem id heap
+  | Just (DataObj (EnvVal env) _) <- heapLookup envMem heap
+  , Just mem <- envLookup id env
+  , Just (DataObj val _) <- heapLookup mem heap =
+      case val of
+        FunVal _ _ _ -> Just mem
         _ -> heapEnvLookupDeepFun (envPredMem env) id heap
-    _ -> heapEnvLookupDeepFun (envPredMem env) id heap
+
+  | otherwise = Nothing
+  
 
 heapInsert :: MemRef -> HeapObj -> Heap -> Heap
 heapInsert mem hobj heap = heapInsertList [(mem, hobj)] heap
@@ -137,10 +144,25 @@ heapEnvInsert :: Ident -> MemRef -> MemRef -> Heap -> Maybe Heap
 heapEnvInsert id mem envMem heap = heapEnvInsertList [(id, mem)] envMem heap
 
 heapEnvInsertList :: [(Ident, MemRef)] -> MemRef -> Heap -> Maybe Heap
-heapEnvInsertList kvs envMem heap = do
-  DataObj (EnvVal env) attrs <- heapLookup envMem heap
-  let env2 = envInsertList kvs env
-  return $ heapInsert envMem (DataObj (EnvVal env2) attrs) heap
+heapEnvInsertList kvs envMem heap
+  | Just (DataObj (EnvVal env) attrs) <- heapLookup envMem heap =
+      let env2 = envInsertList kvs env in
+        Just $ heapInsert envMem (DataObj (EnvVal env2) attrs) heap
+  | otherwise = Nothing
+
+heapCopy :: MemRef -> Heap -> Maybe (MemRef, Heap)
+heapCopy mem heap = undefined
+
+heapCopyKeyMems ::
+  (Ord k) => [(k, MemRef)] -> Heap -> Maybe ([(k, MemRef)], Heap)
+heapCopyKeyMems [] heap = Just ([], heap)
+heapCopyKeyMems ((key, mem) : keyMems) heap = do
+  (mem2, heap2) <- heapCopy mem heap
+  (keyMems2, heap3) <- heapCopyKeyMems keyMems heap2
+  return $ ((key, mem2) : keyMems2, heap3)
+
+heapCopyValue :: Value -> Heap -> Maybe (Value, Heap)
+heapCopyValue = undefined
 
 -- Attributes
 attrsEmpty :: Attributes
