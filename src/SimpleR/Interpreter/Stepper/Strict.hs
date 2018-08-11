@@ -228,8 +228,11 @@ rule_AssignRet state
   | ResultRed mem <- stRedex state
   , Just (AssignCont id, envMem, stack2) <- stackPopV $ stStack state =
       maybeToList $ do
-      heap2 <- heapEnvInsert id mem envMem $ stHeap state
-      error "TODO: COPYING"
+      (mem2, heap2) <- heapCopy mem $ stHeap state
+      heap3 <- heapEnvInsert id mem2 envMem heap2
+      return $ state { stRedex = ResultRed mem2
+                     , stStack = stack2
+                     , stHeap = heap3 }
   | otherwise = []
 
 rule_If :: State -> [State]

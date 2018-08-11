@@ -11,7 +11,7 @@ import SimpleR.R.Parser.Syntax
 -- listToMaybe [] = Nothing
 -- listToMaybe (x:_) = Just x
 
-maybeRead :: Read a => String -> Maybe a
+maybeRead :: (Read a) => String -> Maybe a
 maybeRead str = fmap fst $ listToMaybe $ reads str
 
 port_path :: String
