@@ -1,16 +1,20 @@
+{-# LANGUAGE GADTs #-}
+
 module SimpleR.Interpreter.Commons.Vector
   ( Type (..)
-  , SInt (..)
-  , SDouble (..)
-  , SComplex (..)
-  , SString (..)
-  , SBool (..)
+  -- , SInt (..)
+  -- , SDouble (..)
+  -- , SComplex (..)
+  -- , SString (..)
+  -- , SBool (..)
+  , Atom (..)
   , Vector (..)
-  , idFromSString
-  , vecFromConst
-  , vecLength
-  , vecResize
-  , vecToType
+  , idFromAtomString
+  -- , idFromSString
+  -- , vecFromConst
+  -- , vecLength
+  -- , vecResize
+  -- , vecToType
   ) where
 
 import Data.Maybe
@@ -22,52 +26,59 @@ import SimpleR.Smt
 data Type = IntTy | DoubleTy | ComplexTy | BoolTy | StringTy
   deriving (Eq, Show, Read)
 
-data SInt =
-    SInt Int
-  | NAInt
-  deriving (Ord, Eq, Show, Read)
+data Atom a where
+  Atom :: a -> Atom a
+  NAtom :: Atom a
 
-data SDouble =
-    SDouble Double
-  | NADouble
-  deriving (Ord, Eq, Show, Read)
+instance (Eq a) => Eq (Atom a) where
+  (Atom a) == (Atom b) = a == b
+  (NAtom) == (NAtom) = True
+  _ == _ = False
 
-data SComplex =
-    SComplex Complex
-  | NAComplex
-  deriving (Eq, Show, Read)
+instance (Show a) => Show (Atom a) where
+  show (Atom a) = "Atom (" ++ show a ++ ")"
+  show (NAtom) = "NAtom"
 
-data SString =
-    SString String
-  | NAString
-  deriving (Ord, Eq, Show, Read)
+instance (Read a) => Read (Atom a) where
+  readsPrec _ = error "readsPrec: Atom read unimplemented"
 
-data SBool =
-    SBool Bool
-  | NABool
-  deriving (Ord, Eq, Show, Read)
+instance Functor Atom where
+  fmap _ NAtom = NAtom
+  fmap f (Atom a) = Atom (f a)
+
+instance Applicative Atom where
+  pure a = Atom a
+
+  (NAtom) <*> _ = NAtom
+  (Atom f) <*> atom = fmap f atom
+
+instance Monad Atom where
+  return a = Atom a
+
+  (NAtom) >>= _ = NAtom
+  (Atom a) >>= f = f a
+
 
 data Vector =
-    IntVec [SInt]
-  | DoubleVec [SDouble]
-  | ComplexVec [SComplex]
-  | BoolVec [SBool]
-  | StringVec [SString]
+    IntVec [Atom Int]
+  | DoubleVec [Atom Double]
+  | ComplexVec [Atom Complex]
+  | BoolVec [Atom Bool]
+  | StringVec [Atom String]
   | SymVec SmtIdent Type
   | NilVec
   deriving (Eq, Show, Read)
 
-idFromSString :: SString -> Ident
-idFromSString NAString = idFromString "NA"
-idFromSString (SString str) = idFromString str
+idFromAtomString :: Atom String -> Ident
+idFromAtomString (Atom str) = idFromString str
 
 -- Vector conversion
 vecFromConst :: Const -> Vector
-vecFromConst (IntConst int) = IntVec [SInt int]
-vecFromConst (DoubleConst double) = DoubleVec [SDouble double]
-vecFromConst (ComplexConst complex) = ComplexVec [SComplex complex]
-vecFromConst (BoolConst bool) = BoolVec [SBool bool]
-vecFromConst (StringConst str) = StringVec [SString str]
+vecFromConst (IntConst int) = IntVec [Atom int]
+vecFromConst (DoubleConst double) = DoubleVec [Atom double]
+vecFromConst (ComplexConst complex) = ComplexVec [Atom complex]
+vecFromConst (BoolConst bool) = BoolVec [Atom bool]
+vecFromConst (StringConst str) = StringVec [Atom str]
 vecFroMConst (NaConst) = NilVec
 
 vecLength :: Vector -> Int
@@ -109,123 +120,89 @@ vecResize _ (NilVec) = error $ "vecLength: called with NilVec"
 maybeRead :: (Read a) => String -> Maybe a
 maybeRead str = fmap fst $ listToMaybe $ reads str
 
--- SInt
-sIntFromSInt :: SInt -> SInt
-sIntFromSInt sInt = sInt
+-- Int
+intFromInt :: Int -> Int
+intFromInt int = int
 
-sIntFromSDouble :: SDouble -> SInt
-sIntFromSDouble (NADouble) = NAInt
-sIntFromSDouble (SDouble double) = SInt $ round double
+intFromDouble :: Double -> Int
+intFromDouble double = round double
 
-sIntFromSComplex :: SComplex -> SInt
-sIntFromSComplex (NAComplex) = NAInt
-sIntFromSComplex (SComplex complex) = SInt $ round $ C.realPart complex
+intFromComplex :: Complex -> Int
+intFromComplex complex = round $ C.realPart complex
 
-sIntFromSString :: SString -> SInt
-sIntFromSString (NAString) = NAInt
-sIntFromSString (SString str) =
-  error $ " sIntFromSString: TODO"
---   case maybeRead str of
---     Just int -> SInt int
---     Nothing -> NAInt -- Correct?
+intFromString :: String -> int
+intFromString = error $ "intFromString: TODO"
 
-sIntFromSBool :: SBool -> SInt
-sIntFromSBool (NABool) = NAInt
-sIntFromSBool (SBool True) = SInt 1
-sIntFromSBool (SBool False) = SInt 0
+intFromBool :: Bool -> Int
+intFromBool bool = if bool then 1 else 0
 
--- SDouble
-sDoubleFromSInt :: SInt -> SDouble
-sDoubleFromSInt (NAInt) = NADouble
-sDoubleFromSInt (SInt int) = SDouble $ fromIntegral int
+-- Double
+doubleFromInt :: Int -> Double
+doubleFromInt int = fromIntegral int
 
-sDoubleFromSDouble :: SDouble -> SDouble
-sDoubleFromSDouble sDouble = sDouble
+doubleFromDouble :: Double -> Double
+doubleFromDouble double = double
 
-sDoubleFromSComplex :: SComplex -> SDouble
-sDoubleFromSComplex (NAComplex) = NADouble
-sDoubleFromSComplex (SComplex complex) = SDouble $ C.realPart complex
+doubleFromComplex :: Complex -> Double
+doubleFromComplex complex = C.realPart complex
 
-sDoubleFromSString :: SString -> SDouble
-sDoubleFromSString (NAString) = NADouble
-sDoulbeFromSString (SString str) =
-  error $ "sDoubleFromSString: TODO"
---   case maybeRead str of
---     Just double -> SDouble double
---     Nothing -> NADouble
+doubleFromString :: String -> Double
+doubleFromString = error "doubleFromString: TODO"
 
-sDoubleFromSBool :: SBool -> SDouble
-sDoubleFromSBool (NABool) = NADouble
-sDoubleFromSBool (SBool True) = SDouble 1.0
-sDoubleFromSBool (SBool False) = SDouble 0.0
+doubleFromBool :: Bool -> Double
+doubleFromBool bool = if bool then 1.0 else 0.0
 
--- SComplex
-sComplexFromSInt :: SInt -> SComplex
-sComplexFromSInt (NAInt) = NAComplex
-sComplexFromSInt (SInt int) = SComplex ((fromIntegral int) C.:+ 0.0)
+-- Complex
+complexFromInt :: Int -> Complex
+complexFromInt int = (fromIntegral int) C.:+ 0.0
 
-sComplexFromSDouble :: SDouble -> SComplex
-sComplexFromSDouble (NADouble) = NAComplex
-sComplexFromSDouble (SDouble double) = SComplex (double C.:+ 0.0)
+complexFromDouble :: Double -> Complex
+complexFromDouble double = double C.:+ 0.0
 
-sComplexFromSComplex :: SComplex -> SComplex
-sComplexFromSComplex scomplex = scomplex
+complexFromComplex :: Complex -> Complex
+complexFromComplex complex = complex
 
-sComplexFromSString :: SString -> SComplex
-sComplexFromSString (NAString) = NAComplex
-sComplexFromSString (SString string) =
-  error $ "sComplexFromSString: TODO"
+complexFromString :: String -> Complex
+complexFromString = error "complexFromString: TODO"
 
-sComplexFromSBool :: SBool -> SComplex
-sComplexFromSBool (NABool) = NAComplex
-sComplexFromSBool (SBool True) = SComplex (1.0 C.:+ 0.0)
-sComplexFromSBool (SBool False) = SComplex (0.0 C.:+ 0.0)
+complexFromBool :: Bool -> Complex
+complexFromBool bool = if bool then 1.0 C.:+ 0.0 else 0.0 C.:+ 0.0
 
--- SString
-sStringFromSInt :: SInt -> SString
-sStringFromSInt (NAInt) = NAString
-sStringFromSInt (SInt int) = SString $ show int
+-- String
+stringFromInt :: Int -> String
+stringFromInt int = show int
 
-sStringFromSDouble :: SDouble -> SString
-sStringFromSDouble (NADouble) = NAString
-sStringFromSDouble (SDouble double) = SString $ show double
+stringFromDouble :: Double -> String
+stringFromDouble double = show double
 
-sStringFromSComplex :: SComplex -> SString
-sStringFromSComplex (NAComplex) = NAString
-sStringFromSComplex (SComplex complex) = SString $ show complex
+stringFromComplex :: Complex -> String
+stringFromComplex complex = show complex
 
-sStringFromSString :: SString -> SString
-sStringFromSString sstring = sstring
+stringFromString :: String -> String
+stringFromString string = string
 
-sStringFromSBool :: SBool -> SString
-sStringFromSBool (NABool) = NAString
-sStringFromSBool (SBool bool) = SString $ show bool
+stringFromBool :: Bool -> String
+stringFromBool bool = show bool
 
 -- SBool
-sBoolFromSInt :: SInt -> SBool
-sBoolFromSInt (NAInt) = NABool
-sBoolFromSInt (SInt int) = SBool $ int /= 0
+boolFromInt :: Int -> Bool
+boolFromInt int = int /= 0
 
-sBoolFromSDouble :: SDouble -> SBool
-sBoolFromSDouble (NADouble) = NABool
-sBoolFromSDouble (SDouble double) = SBool $ double /= 0.0
+boolFromDouble :: Double -> Bool
+boolFromDouble double = double /= 0.0
 
-sBoolFromSComplex :: SComplex -> SBool
-sBoolFromSComplex (NAComplex) = NABool
-sBoolFromSComplex (SComplex complex) = SBool $ complex /= (0.0 C.:+ 0.0)
+boolFromComplex :: Complex -> Bool
+boolFromComplex complex = complex /= (0.0 C.:+ 0.0)
 
-sBoolFromSString :: SString -> SBool
-sBoolFromSString (NAString) = NABool
-sBoolFromSString sstring =
-  error $ "sBoolFromSString: TODO"
+boolFromString :: String -> Bool
+boolFromString = error $ "boolFromString: TODO"
 
-sBoolFromSBool :: SBool -> SBool
-sBoolFromSBool sbool = sbool
-
-
+boolFromBool :: Bool -> Bool
+boolFromBool bool = bool
 
 vecToType :: Vector -> Type -> Vector
-vecToType (IntVec xs) IntTy = IntVec $ map sIntFromSInt xs
+vecToType (IntVec xs) IntTy = IntVec $ (map . fmap) intFromInt xs
+{-
 vecToType (IntVec xs) DoubleTy = DoubleVec $ map sDoubleFromSInt xs
 vecToType (IntVec xs) ComplexTy = ComplexVec $ map sComplexFromSInt xs
 vecToType (IntVec xs) StringTy = StringVec $ map sStringFromSInt xs
@@ -257,4 +234,122 @@ vecToType (BoolVec xs) BoolTy = BoolVec $ map sBoolFromSBool xs
 
 vecToType (SymVec sym _) ty = SymVec sym ty
 vecToType (NilVec) _ = NilVec
+-}
+
+-- Operations
+
+{-
+mapSInt :: (Int -> Int) -> [SInt] -> [SInt]
+mapSInt _ [] = []
+mapSInt f (NAInt : xs) = NAInt : mapSInt f xs
+mapSInt f ((SInt x) : xs) = (SInt $ f x) : mapSInt f xs
+
+mapSDouble :: (Double -> Double) -> [SDouble] -> [SDouble]
+mapSDouble _ [] = []
+mapSDouble f (NADouble : xs) = NADouble : mapSDouble f xs
+mapSDouble f ((SDouble x) : xs) = (SDouble $ f x) : mapSDouble f xs
+
+mapSComplex :: (Complex -> Complex) -> [SComplex] -> [SComplex]
+mapSComplex _ [] = []
+mapSComplex f (NAComplex : xs) = NAComplex : mapSComplex f xs
+mapSComplex f ((SComplex x) : xs) = (SComplex $ f x) : mapSComplex f xs
+
+mapSString :: (String -> String) -> [SString] -> [SString]
+mapSString _ [] = []
+mapSString f (NAString : xs) = NAString : mapSString f xs
+mapSString f ((SString x) : xs) = (SString $ f x) : mapSString f xs
+
+mapSBool :: (Bool -> Bool) -> [SBool] -> [SBool]
+mapSBool _ [] = []
+mapSBool f (NABool : xs) = NABool : mapSBool f xs
+mapSBool f ((SBool x) : xs) = (SBool $ f x) : mapSBool f xs
+
+data VectorUnOp = VectorUnOp
+  { intUnOp :: Int -> Int
+  , doubleUnOp :: Double -> Double
+  , complexUnOp :: Complex -> Complex
+  , stringUnOp :: String -> String
+  , boolUnOp :: Bool -> Bool
+  }
+
+vecUnOpMk ::
+  (Int -> Int) ->
+  (Double -> Double) ->
+  (Complex -> Complex) ->
+  (String -> String) ->
+  (Bool -> Bool) -> VectorUnOp
+vecUnOpMk funInt funDouble funComplex funString funBool =
+  VectorUnOp { intUnOp = funInt
+             , doubleUnOp = funDouble
+             , complexUnOp = funComplex
+             , stringUnOp = funString
+             , boolUnOp = funBool }
+
+data VectorBinOp = VectorBinOp
+  { intBinOp :: Int -> Int -> Int
+  , doubleBinOp :: Double -> Double -> Double
+  , complexBinOp :: Complex -> Complex -> Complex
+  , stringBinOp :: String -> String -> String
+  , boolBinOp :: Bool -> Bool -> Bool
+  }
+
+vecBinOpMk ::
+  (Int -> Int -> Int) ->
+  (Double -> Double -> Double) ->
+  (Complex -> Complex -> Complex) ->
+  (String -> String -> String) ->
+  (Bool -> Bool -> Bool) -> VectorBinOp
+vecBinOpMk funInt funDouble funComplex funString funBool =
+  VectorBinOp { intBinOp = funInt
+             , doubleBinOp = funDouble
+             , complexBinOp = funComplex
+             , stringBinOp = funString
+             , boolBinOp = funBool }
+
+applyVecUnOp :: VectorUnOp -> Vector -> Vector
+applyVecUnOp un (IntVec xs) =
+  let f = intUnOp un in
+    IntVec $ mapSInt f xs
+applyVecUnOp un (DoubleVec xs) =
+  let f = doubleUnOp un in
+    DoubleVec $ mapSDouble f xs
+applyVecUnOp un (ComplexVec xs) =
+  let f = complexUnOp un in
+    ComplexVec $ mapSComplex f xs
+applyVecUnOp un (StringVec xs) =
+  let f = stringUnOp un in
+    StringVec $ mapSString f xs
+applyVecUnOp un (BoolVec xs) =
+  let f = boolUnOp un in
+    BoolVec $ mapSBool f xs
+applyVecUnOp _ (NilVec) = NilVec
+applyVecUnOp _ (SymVec _ _) = error $ "applyVecUnOp: used on SymVec!"
+
+-- Assumed vectors to be coerced and zipped
+applyVecBinOp :: VectorBinOp -> Vector -> Vector -> Vector
+applyVecBinOp bin (IntVec xs) (IntVec ys) =
+  let f = intBinOp bin in
+    IntVec $ mapSInt (\(x, y) -> f x y) $ zip xs ys
+applyVecBinOp bin (DoubleVec xs) (DoubleVec ys) =
+  let f = doubleBinOp bin in
+    DoubleVec $ mapSDouble (\(x, y) -> f x y) $ zip xs ys
+applyVecBinOp bin (ComplexVec xs) (ComplexVec ys) =
+  let f = complexBinOp bin in
+    ComplexVec $ mapSComplex (\(x, y) -> f x y) $ zip xs ys
+applyVecBinOp bin (StringVec xs) (StringVec ys) =
+  let f = stringBinOp bin in
+    StringVec $ mapSString (\(x, y) -> f x y) $ zip xs ys
+applyVecBinOp bin (BoolVec xs) (BoolVec ys) =
+  let f = boolBinOp bin in
+    BoolVec $ mapSBool (\(x, y) -> f x y) $ zip xs ys
+applyVecBinOp _ (NilVec) _ = NilVec
+applyVecBinOp _ _ (NilVec) = NilVec
+applyVecBinOp _ (SymVec _ _) _ = error $ "applyVecBinOp: used on SymVec!"
+applyVecBinOp _ _ (SymVec _ _) = error $ "applyVecBinOp: used on SymVec!"
+applyVecBinOp _ vec1 vec2 =
+  error $ "applyVecBinOp: fall through " ++ show (vec1, vec2)
+
+
+
+-}
 

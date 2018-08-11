@@ -27,10 +27,10 @@ pullArgs ((VarArg, mem) : args) heap
       let strMemPairs = zip nameSStrs varMems in
       let idMemPairs =
             map (\(n, m) ->
-                  if n == SString "" then
+                  if n == Atom "" then
                     Left m
                   else
-                    Right (idFromSString n, m)) strMemPairs in
+                    Right (idFromAtomString n, m)) strMemPairs in
         Just $ idMemPairs ++ args2
   | otherwise = Nothing
 

@@ -137,7 +137,8 @@ heapAllocList (hobj : hobjs) heap =
 
 heapAllocConst :: Const -> Heap -> (MemRef, Heap)
 heapAllocConst const heap =
-  heapAlloc (DataObj (VecVal (vecFromConst const)) attrsEmpty) heap
+  -- heapAlloc (DataObj (VecVal (vecFromConst const)) attrsEmpty) heap
+  undefined
 
 heapBinds :: Heap -> [(MemRef, HeapObj)]
 heapBinds heap = M.toList $ heapMap heap

@@ -62,7 +62,7 @@ liftVariadics ::
   [Either MemRef (Ident, MemRef)] -> MemRef -> Heap -> Maybe (MemRef, Heap)
 liftVariadics args envMem heap = do
   let (names, mems) = unzip $ padBlankNames args
-  let namesVal = VecVal $ StringVec (map SString names)
+  let namesVal = VecVal $ StringVec (map Atom names)
   let (namesMem, heap2) = heapAlloc (DataObj namesVal attrsEmpty) heap
   let varVal = RefsVal mems
   let refsAttrs = attrsInsert idAttrsNames namesMem attrsEmpty
