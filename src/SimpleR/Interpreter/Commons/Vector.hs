@@ -1,4 +1,7 @@
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE DataKinds #-}
 
 module SimpleR.Interpreter.Commons.Vector
   ( Type (..)
@@ -25,6 +28,24 @@ import SimpleR.Smt
 
 data Type = IntTy | DoubleTy | ComplexTy | BoolTy | StringTy
   deriving (Eq, Show, Read)
+
+class HskType a where
+  asRType :: a -> Type
+
+instance HskType Int where
+  asRType _ = IntTy
+
+instance HskType Double where
+  asRType _ = DoubleTy
+
+instance HskType Complex where
+  asRType _ = ComplexTy
+
+instance HskType String where
+  asRType _ = StringTy
+
+instance HskType Bool where
+  asRType _ = BoolTy
 
 data Atom a where
   Atom :: a -> Atom a
@@ -57,7 +78,6 @@ instance Monad Atom where
 
   (NAtom) >>= _ = NAtom
   (Atom a) >>= f = f a
-
 
 data Vector =
     IntVec [Atom Int]
@@ -96,6 +116,29 @@ vecType (ComplexVec _) = ComplexTy
 vecType (BoolVec _) = BoolTy
 vecType (StringVec _) = StringTy
 vecType (SymVec _ ty) = ty
+
+vecInts :: Vector -> Maybe [Atom Int]
+vecInts (IntVec xs) = Just xs
+vecInts _ = Nothing
+
+vecDoubles :: Vector -> Maybe [Atom Double]
+vecDoubles (DoubleVec xs) = Just xs
+vecDoubles _ = Nothing
+
+vecComplexs :: Vector -> Maybe [Atom Complex]
+vecComplexs (ComplexVec xs) = Just xs
+vecComplexs _ = Nothing
+
+vecStrings :: Vector -> Maybe [Atom String]
+vecStrings (StringVec xs) = Just xs
+vecStrings _ = Nothing
+
+vecBools :: Vector -> Maybe [Atom Bool]
+vecBools (BoolVec xs) = Just xs
+vecBools _ = Nothing
+
+------
+-- Resizing
 
 snip :: Int -> [a] -> [a]
 snip n xs = take n $ concat $ repeat xs
@@ -184,7 +227,7 @@ stringFromString string = string
 stringFromBool :: Bool -> String
 stringFromBool bool = show bool
 
--- SBool
+-- Bool
 boolFromInt :: Int -> Bool
 boolFromInt int = int /= 0
 
@@ -202,154 +245,64 @@ boolFromBool bool = bool
 
 vecToType :: Vector -> Type -> Vector
 vecToType (IntVec xs) IntTy = IntVec $ (map . fmap) intFromInt xs
-{-
-vecToType (IntVec xs) DoubleTy = DoubleVec $ map sDoubleFromSInt xs
-vecToType (IntVec xs) ComplexTy = ComplexVec $ map sComplexFromSInt xs
-vecToType (IntVec xs) StringTy = StringVec $ map sStringFromSInt xs
-vecToType (IntVec xs) BoolTy = BoolVec $ map sBoolFromSInt xs
+vecToType (IntVec xs) DoubleTy = DoubleVec $ (map . fmap) doubleFromInt xs
+vecToType (IntVec xs) ComplexTy = ComplexVec $ (map . fmap) complexFromInt xs
+vecToType (IntVec xs) StringTy = StringVec $ (map . fmap) stringFromInt xs
+vecToType (IntVec xs) BoolTy = BoolVec $ (map . fmap) boolFromInt xs
 
-vecToType (DoubleVec xs) IntTy = IntVec $ map sIntFromSDouble xs
-vecToType (DoubleVec xs) DoubleTy = DoubleVec $ map sDoubleFromSDouble xs
-vecToType (DoubleVec xs) ComplexTy = ComplexVec $ map sComplexFromSDouble xs
-vecToType (DoubleVec xs) StringTy = StringVec $ map sStringFromSDouble xs
-vecToType (DoubleVec xs) BoolTy = BoolVec $ map sBoolFromSDouble xs
+vecToType (DoubleVec xs) IntTy = IntVec $ (map . fmap) intFromDouble xs
+vecToType (DoubleVec xs) DoubleTy =
+  DoubleVec $ (map . fmap) doubleFromDouble xs
+vecToType (DoubleVec xs) ComplexTy =
+  ComplexVec $ (map . fmap) complexFromDouble xs
+vecToType (DoubleVec xs) StringTy =
+  StringVec $ (map . fmap) stringFromDouble xs
+vecToType (DoubleVec xs) BoolTy = BoolVec $ (map . fmap) boolFromDouble xs
 
-vecToType (ComplexVec xs) IntTy = IntVec $ map sIntFromSComplex xs
-vecToType (ComplexVec xs) DoubleTy = DoubleVec $ map sDoubleFromSComplex xs
-vecToType (ComplexVec xs) ComplexTy = ComplexVec $ map sComplexFromSComplex xs
-vecToType (ComplexVec xs) StringTy = StringVec $ map sStringFromSComplex xs
-vecToType (ComplexVec xs) BoolTy = BoolVec $ map sBoolFromSComplex xs
+vecToType (ComplexVec xs) IntTy = IntVec $ (map . fmap) intFromComplex xs
+vecToType (ComplexVec xs) DoubleTy =
+  DoubleVec $ (map . fmap) doubleFromComplex xs
+vecToType (ComplexVec xs) ComplexTy =
+  ComplexVec $ (map . fmap) complexFromComplex xs
+vecToType (ComplexVec xs) StringTy =
+  StringVec $ (map . fmap) stringFromComplex xs
+vecToType (ComplexVec xs) BoolTy = BoolVec $ (map . fmap) boolFromComplex xs
 
-vecToType (StringVec xs) IntTy = IntVec $ map sIntFromSString xs
-vecToType (StringVec xs) DoubleTy = DoubleVec $ map sDoubleFromSString xs
-vecToType (StringVec xs) ComplexTy = ComplexVec $ map sComplexFromSString xs
-vecToType (StringVec xs) StringTy = StringVec $ map sStringFromSString xs
-vecToType (StringVec xs) BoolTy = BoolVec $ map sBoolFromSString xs
+vecToType (StringVec xs) IntTy = IntVec $ (map . fmap) intFromString xs
+vecToType (StringVec xs) DoubleTy =
+  DoubleVec $ (map . fmap) doubleFromString xs
+vecToType (StringVec xs) ComplexTy =
+  ComplexVec $ (map . fmap) complexFromString xs
+vecToType (StringVec xs) StringTy =
+  StringVec $ (map . fmap) stringFromString xs
+vecToType (StringVec xs) BoolTy = BoolVec $ (map . fmap) boolFromString xs
 
-vecToType (BoolVec xs) IntTy = IntVec $ map sIntFromSBool xs
-vecToType (BoolVec xs) DoubleTy = DoubleVec $ map sDoubleFromSBool xs
-vecToType (BoolVec xs) ComplexTy = ComplexVec $ map sComplexFromSBool xs
-vecToType (BoolVec xs) StringTy = StringVec $ map sStringFromSBool xs
-vecToType (BoolVec xs) BoolTy = BoolVec $ map sBoolFromSBool xs
+vecToType (BoolVec xs) IntTy = IntVec $ (map . fmap) intFromBool xs
+vecToType (BoolVec xs) DoubleTy = DoubleVec $ (map . fmap) doubleFromBool xs
+vecToType (BoolVec xs) ComplexTy =
+  ComplexVec $ (map . fmap) complexFromBool xs
+vecToType (BoolVec xs) StringTy = StringVec $ (map . fmap) stringFromBool xs
+vecToType (BoolVec xs) BoolTy = BoolVec $ (map . fmap) boolFromBool xs
 
 vecToType (SymVec sym _) ty = SymVec sym ty
 vecToType (NilVec) _ = NilVec
--}
 
 -- Operations
 
-{-
-mapSInt :: (Int -> Int) -> [SInt] -> [SInt]
-mapSInt _ [] = []
-mapSInt f (NAInt : xs) = NAInt : mapSInt f xs
-mapSInt f ((SInt x) : xs) = (SInt $ f x) : mapSInt f xs
+data VecFun1 = VecFun1 (Vector -> Vector)
+data VecFun2 = VecFun2 (Vector -> Vector -> Vector)
+data VecFun3 = VecFun3 (Vector -> Vector -> Vector -> Vector)
 
-mapSDouble :: (Double -> Double) -> [SDouble] -> [SDouble]
-mapSDouble _ [] = []
-mapSDouble f (NADouble : xs) = NADouble : mapSDouble f xs
-mapSDouble f ((SDouble x) : xs) = (SDouble $ f x) : mapSDouble f xs
+applyVecFun1 :: VecFun1 -> Vector -> Vector
+applyVecFun1 (VecFun1 fun) vec1 = fun vec1
 
-mapSComplex :: (Complex -> Complex) -> [SComplex] -> [SComplex]
-mapSComplex _ [] = []
-mapSComplex f (NAComplex : xs) = NAComplex : mapSComplex f xs
-mapSComplex f ((SComplex x) : xs) = (SComplex $ f x) : mapSComplex f xs
+applyVecFun2 :: VecFun2 -> Vector -> Vector -> Vector
+applyVecFun2 (VecFun2 fun) vec1 vec2 = fun vec1 vec2
 
-mapSString :: (String -> String) -> [SString] -> [SString]
-mapSString _ [] = []
-mapSString f (NAString : xs) = NAString : mapSString f xs
-mapSString f ((SString x) : xs) = (SString $ f x) : mapSString f xs
-
-mapSBool :: (Bool -> Bool) -> [SBool] -> [SBool]
-mapSBool _ [] = []
-mapSBool f (NABool : xs) = NABool : mapSBool f xs
-mapSBool f ((SBool x) : xs) = (SBool $ f x) : mapSBool f xs
-
-data VectorUnOp = VectorUnOp
-  { intUnOp :: Int -> Int
-  , doubleUnOp :: Double -> Double
-  , complexUnOp :: Complex -> Complex
-  , stringUnOp :: String -> String
-  , boolUnOp :: Bool -> Bool
-  }
-
-vecUnOpMk ::
-  (Int -> Int) ->
-  (Double -> Double) ->
-  (Complex -> Complex) ->
-  (String -> String) ->
-  (Bool -> Bool) -> VectorUnOp
-vecUnOpMk funInt funDouble funComplex funString funBool =
-  VectorUnOp { intUnOp = funInt
-             , doubleUnOp = funDouble
-             , complexUnOp = funComplex
-             , stringUnOp = funString
-             , boolUnOp = funBool }
-
-data VectorBinOp = VectorBinOp
-  { intBinOp :: Int -> Int -> Int
-  , doubleBinOp :: Double -> Double -> Double
-  , complexBinOp :: Complex -> Complex -> Complex
-  , stringBinOp :: String -> String -> String
-  , boolBinOp :: Bool -> Bool -> Bool
-  }
-
-vecBinOpMk ::
-  (Int -> Int -> Int) ->
-  (Double -> Double -> Double) ->
-  (Complex -> Complex -> Complex) ->
-  (String -> String -> String) ->
-  (Bool -> Bool -> Bool) -> VectorBinOp
-vecBinOpMk funInt funDouble funComplex funString funBool =
-  VectorBinOp { intBinOp = funInt
-             , doubleBinOp = funDouble
-             , complexBinOp = funComplex
-             , stringBinOp = funString
-             , boolBinOp = funBool }
-
-applyVecUnOp :: VectorUnOp -> Vector -> Vector
-applyVecUnOp un (IntVec xs) =
-  let f = intUnOp un in
-    IntVec $ mapSInt f xs
-applyVecUnOp un (DoubleVec xs) =
-  let f = doubleUnOp un in
-    DoubleVec $ mapSDouble f xs
-applyVecUnOp un (ComplexVec xs) =
-  let f = complexUnOp un in
-    ComplexVec $ mapSComplex f xs
-applyVecUnOp un (StringVec xs) =
-  let f = stringUnOp un in
-    StringVec $ mapSString f xs
-applyVecUnOp un (BoolVec xs) =
-  let f = boolUnOp un in
-    BoolVec $ mapSBool f xs
-applyVecUnOp _ (NilVec) = NilVec
-applyVecUnOp _ (SymVec _ _) = error $ "applyVecUnOp: used on SymVec!"
-
--- Assumed vectors to be coerced and zipped
-applyVecBinOp :: VectorBinOp -> Vector -> Vector -> Vector
-applyVecBinOp bin (IntVec xs) (IntVec ys) =
-  let f = intBinOp bin in
-    IntVec $ mapSInt (\(x, y) -> f x y) $ zip xs ys
-applyVecBinOp bin (DoubleVec xs) (DoubleVec ys) =
-  let f = doubleBinOp bin in
-    DoubleVec $ mapSDouble (\(x, y) -> f x y) $ zip xs ys
-applyVecBinOp bin (ComplexVec xs) (ComplexVec ys) =
-  let f = complexBinOp bin in
-    ComplexVec $ mapSComplex (\(x, y) -> f x y) $ zip xs ys
-applyVecBinOp bin (StringVec xs) (StringVec ys) =
-  let f = stringBinOp bin in
-    StringVec $ mapSString (\(x, y) -> f x y) $ zip xs ys
-applyVecBinOp bin (BoolVec xs) (BoolVec ys) =
-  let f = boolBinOp bin in
-    BoolVec $ mapSBool (\(x, y) -> f x y) $ zip xs ys
-applyVecBinOp _ (NilVec) _ = NilVec
-applyVecBinOp _ _ (NilVec) = NilVec
-applyVecBinOp _ (SymVec _ _) _ = error $ "applyVecBinOp: used on SymVec!"
-applyVecBinOp _ _ (SymVec _ _) = error $ "applyVecBinOp: used on SymVec!"
-applyVecBinOp _ vec1 vec2 =
-  error $ "applyVecBinOp: fall through " ++ show (vec1, vec2)
+applyVecFun3 :: VecFun3 -> Vector -> Vector -> Vector -> Vector
+applyVecFun3 (VecFun3 fun) vec1 vec2 vec3 = fun vec1 vec2 vec3
 
 
 
--}
+
 
