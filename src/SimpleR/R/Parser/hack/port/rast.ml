@@ -148,6 +148,19 @@ type 'a program = ('a expr) list
 
 (* Useful string conversion functions *)
 
+let string_of_float2 : float -> string =
+  fun f ->
+    let str = string_of_float f in
+    let len = String.length str in
+      if str.[len - 1] = '.' then
+        str ^ "0"
+      else if str = "inf" then
+        "Infinity"
+      else if str = "-inf" then
+        "-Infinity"
+      else
+        str
+
 let string_of_ident : 'a ident -> string =
   fun id -> match id.pkg with
     | None ->
@@ -206,13 +219,14 @@ let string_of_binop : binop -> string =
     | GetPackage    -> "RGetPackage"
     | GetPackageInt -> "RGetPackageInt"
 
+
 let string_of_rnumeric =
   function
     | NumInt i -> "RNumInt " ^ string_of_int i
     | NumNaInt -> "RNumNaInt"
-    | NumFloat f -> "RNumFloat " ^ string_of_float f
+    | NumFloat f -> "RNumFloat " ^ string_of_float2 f
     | NumNaFloat -> "RNumNaFloat"
-    | NumComplex (r, i) -> "RNumComplex (" ^ string_of_float r ^ " :+ " ^ string_of_float i ^ ")"
+    | NumComplex (r, i) -> "RNumComplex (" ^ string_of_float2 r ^ " :+ " ^ string_of_float2 i ^ ")"
     | NumNaComplex -> "RNumNaComplex"
 
 let string_of_rbool =
