@@ -18,7 +18,10 @@ import SimpleR.Language
 import SimpleR.Interpreter.Commons
 
 data RPrim =
-    RPrimAnyNa
+    RPRIM
+
+  | RPrimAnyNa
+
   | RPrimAsCharacter
   | RPrimAsComplex
   | RPrimAsDouble
@@ -28,11 +31,13 @@ data RPrim =
   | RPrimAsCall
   | RPrimAsNumeric
   | RPrimAsRaw
+
   | RPrimC
   | RPrimDim
   | RPrimDimArrow
   | RPrimDimNames
   | RPrimDimNamesAssign
+
   | RPrimIsArray
   | RPrimIsFinite
   | RPrimIsInfinite
@@ -40,8 +45,10 @@ data RPrim =
   | RPrimIsNa
   | RPrimIsNan
   | RPrimIsNumeric
+
   | RPrimLength
   | RPrimLengthAssign
+  | RPrimLevels
   | RPrimLevelsAssign
   | RPrimNames
   | RPrimNamesAssign
@@ -74,6 +81,7 @@ data RPrim =
   | RPrimCosPi
   | RPrimSinPi
   | RPrimTanPi
+
   | RPrimGamma
   | RPrimLGamma
   | RPrimDiGamma
@@ -90,6 +98,7 @@ data RPrim =
   | RPrimPow
   | RPrimMod
   | RPrimIntDiv
+
   | RPrimAnd
   | RPrimOr
   | RPrimEq
@@ -170,7 +179,9 @@ params3 = map (Param . idFromString) ["a", "b", "c"]
 -- https://github.com/wch/r-source/blob/a6d3738aeb73c748f27a94a2c97bb5750c6e01bf/src/library/base/R/zzz.R#L150-#L210
 primAll :: [(String, RPrim, [Param])]
 primAll =
-  [ ("anyNA",           RPrimAnyNa,         [])
+  [ ("RPRIM", RPRIM, [])
+
+  -- Conversion
   , ("as.character",    RPrimAsCharacter,   [])
   , ("as.complex",      RPrimAsComplex,     [])
   , ("as.double",       RPrimAsDouble,      [])
@@ -181,12 +192,27 @@ primAll =
   , ("as.numeric",      RPrimAsNumeric,     [])
   , ("as.raw",          RPrimAsRaw,         [])
 
+  -- Vectors
   , ("c",           RPrimC,              [])
+  , (":",           RPrimColon,          [])
+  , ("[[",  RPrimVecProj,         [])
+  , ("[",   RPrimVecSub,          [])
   , ("dim",         RPrimDim,            [])
   , ("dim<-",       RPrimDimArrow,       [])
   , ("dimnames",    RPrimDimNames,       [])
   , ("dimnames<-",  RPrimDimNamesAssign, [])
+  , ("length",      RPrimLength,        [])
+  , ("length<-",    RPrimLengthAssign,  [])
+  , ("levels",      RPrimLevels,        [])
+  , ("levels<-",    RPrimLevelsAssign,  [])
+  , ("names",       RPrimNames,         [])
+  , ("names<-",     RPrimNamesAssign,   [])
+  , ("rep",         RPrimRep,     [])
+  , ("seq.int",     RPrimSeqInt,  [])
+  , ("xtfrm",       RPrimXtfrm,   [])
+  , ("anyNA",           RPrimAnyNa,         [])
 
+  -- Is operations
   , ("is.array",    RPrimIsArray,     [])
   , ("is.finite",   RPrimIsFinite,    [])
   , ("is.infinite", RPrimIsInfinite,  [])
@@ -195,16 +221,7 @@ primAll =
   , ("is.nan",      RPrimIsNan,       [])
   , ("is.numeric",  RPrimIsNumeric,   [])
 
-  , ("length",    RPrimLength,        [])
-  , ("length<-",  RPrimLengthAssign,  [])
-  , ("levels<-",  RPrimLevelsAssign,  [])
-  , ("names",     RPrimNames,         [])
-  , ("names<-",   RPrimNamesAssign,   [])
-
-  , ("rep",     RPrimRep,     [])
-  , ("seq.int", RPrimSeqInt,  [])
-  , ("xtfrm",   RPrimXtfrm,   [])
-
+  -- Numerical
   , ("abs",     RPrimAbs,     [])
   , ("sign",    RPrimSign,    [])
   , ("sqrt",    RPrimSqrt,    [])
@@ -241,6 +258,7 @@ primAll =
   , ("cummax",    RPrimCumMax,    [])
   , ("cummin",    RPrimCumMin,    [])
 
+  -- More numerical
   , ("+",   RPrimPlus,    [])
   , ("-",   RPrimMinus,   [])
   , ("*",   RPrimMult,    [])
@@ -256,6 +274,7 @@ primAll =
   , ("<=",  RPrimLe,      [])
   , (">=",  RPrimGe,      [])
   , (">",   RPrimGt,      [])
+  , ("!",   RPrimNot,     [])
 
   , ("all", RPrimAll,     [])
   , ("any", RPrimAny,     [])
@@ -265,23 +284,24 @@ primAll =
   , ("min", RPrimMin,     [])
   , ("range", RPrimRange, [])
 
+  -- Complex numbers
   , ("Arg",   RPrimArg,     [])
   , ("Conj",  RPrimConj,    [])
   , ("Im",    RPrimIm,      [])
   , ("Mod",   RPrimModulus, [])
   , ("Re",    RPrimReal,    [])
 
-  -- Things that were not explicitly included but nice for smooth translation.
-  , ("!",   RPrimNot,             [])
-  , (":",   RPrimColon,           [])
+  -- Assignment
   , ("<-",  RPrimAssign,          [])
   , ("<<-", RPrimSuperAssign,     [])
-  , ("~",   RPrimForm,            [])
-  , ("?",   RPrimHelp,            [])
-  , ("[[",  RPrimVecProj,         [])
-  , ("[",   RPrimVecSub,          [])
+
+  -- Lookups
   , ("::",  RPrimGetPackage,      [])
   , (":::", RPrimGetPackageInt,   [])
+
+  -- Weird things
+  , ("~",   RPrimForm,            [])
+  , ("?",   RPrimHelp,            [])
   ]
 
 primIds :: [Ident]

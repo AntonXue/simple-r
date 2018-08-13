@@ -1,8 +1,8 @@
 module SimpleR.Interpreter.Preprocessor.Loader
-  ( baseDir
-  , baseFile
-  , canonRFile
-  , programFromFile
+  (
+    linearizeBaseWithPasses
+  , linearizeFileWithPasses
+  , linearizeFileWithBaseWithPasses
   , loadFileWithBase
   , loadFileGuessWithBase
   ) where
@@ -16,9 +16,8 @@ import SimpleR.Language
 import SimpleR.R
 import SimpleR.Interpreter.Commons
 import SimpleR.Interpreter.Natives
-import SimpleR.Interpreter.Preprocessor.SyntaxFromRast
+import SimpleR.Interpreter.Preprocessor.LinearizationFromFile
 import SimpleR.Interpreter.Preprocessor.Passes
-import SimpleR.Interpreter.Preprocessor.RunPasses
 
 -- The big picture for the phases:
 --  1. Parse the base
@@ -27,132 +26,32 @@ import SimpleR.Interpreter.Preprocessor.RunPasses
 --  4. Run processing passes on user program
 --  5. Run processing passes on the combination of base + user program
 
-
--- Utility stuff
-baseDir :: IO String
-baseDir = do
-  curr <- getCurrentDirectory
-  return $ curr ++ "/base/R"
-
-baseFile :: IO String
-baseFile = return $ "custom.R"
-
-envMemOffsetMem :: MemRef
-envMemOffsetMem = memFromInt 2
-
-data ExecTree =
-    ExprLeaf String Expr
-  | ExprNode String [ExecTree]
-  deriving (Eq, Show, Read)
-
-unwrapRawString :: String -> String
-unwrapRawString str = case str of
-  ('"' : chars) ->
-    case reverse chars of
-      ('"' : trimmed) -> reverse trimmed
-      _ -> str
-  _ -> str
-
-canonRFile :: String -> String -> String
-canonRFile dir file =
-  case file of
-    (':' : _) -> file -- absolute path
-    _ -> dir ++ "/" ++ file
+-- Responsible 
 
 -----
 -- Parsing the R file + passes
+linearizeBaseWithPasses :: IO ([String], [(String, Expr)])
+linearizeBaseWithPasses = do
+  (files, pairs) <- linearizeBase
+  case runBasePasses pairs of
+    PassOkay okays -> return (files, okays)
+    PassFail msgs -> error $ "linearizeBaseWithPasses: " ++ (show msgs)
 
-programFromFile :: String -> IO Program
-programFromFile file = do
-  maybeRProg <- parseRFile file
-  case maybeRProg of
-    (Just rprog) -> return $ fst $ convert rprog 1 -- Seed is whatever, here 1
-    _ -> error $ "programFromFile: error parsing " ++ show file
+linearizeFileWithPasses :: String -> String -> IO ([String], [(String, Expr)])
+linearizeFileWithPasses dir file = do
+  (files, pairs) <- linearizeFile dir file
+  case runUserPasses pairs of
+    PassOkay okays -> return (files, okays)
+    PassFail msgs -> error $ "linearizeFileWithPasses: " ++ (show msgs)
 
-passedBaseFromFile :: String -> IO Program
-passedBaseFromFile file = do
-  baseProg <- programFromFile file
-  case runBasePasses baseProg of
-    PassFail msgs -> error $ "passedBaseFromCanonFile: msgs " ++ show msgs
-    PassOkay prog -> return prog
-
-passedUserFromFile file = do
-  userProg <- programFromFile file
-  case runUserPasses userProg of
-    PassFail msgs -> error $ "passedUserFromCanonFile: msgs " ++ show msgs
-    PassOkay prog -> return prog
-
------
--- Set the stuff up so that it's actually ready to load into a State
-
--- Determine whether an expression is about using `source`, or regular stuff
-catFromExpr :: Expr -> Either String Expr
-catFromExpr (LamApp (Var (fun @ Ident { idName = "source" }))
-                    [Arg (Const (StringConst src))]) = Left src
-catFromExpr (LamApp (Var (fun @ Ident { idName = "source" }))
-                    [Arg (Var id)]) = Left $ idName id
-catFromExpr expr = Right expr
-
-execTreeFromFile :: String -> String -> (String -> IO Program) -> IO ExecTree
-execTreeFromFile dir file parser = do
-  let canonFile = canonRFile dir file
-  Program exprs <- parser canonFile
-  let cats = map catFromExpr exprs
-  nodes <- mapM (\cat -> case cat of
-                    Left childFile -> execTreeFromFile dir childFile parser
-                    Right expr -> return $ ExprLeaf canonFile expr)
-                cats
-  return $ ExprNode canonFile nodes
-
------
--- Get the base and user exec trees, which will later be linearized
-baseExecTree :: IO ExecTree
-baseExecTree = do
-  base <- baseDir
-  file <- baseFile
-  execTreeFromFile base file passedBaseFromFile
-
-userExecTree :: String -> String -> IO ExecTree
-userExecTree dir file = execTreeFromFile dir file passedUserFromFile
-
-passedBaseExecTree :: IO ExecTree
-passedBaseExecTree = baseExecTree -- Nothing yet at this phase
-
--- Nothing yet at this phase
-passedUserExecTree :: String -> String -> IO ExecTree
-passedUserExecTree dir file = userExecTree dir file
-
------
--- ExecTree processing + linearization
-
-joinExecTree :: ExecTree -> ExecTree -> ExecTree
-joinExecTree base user =
-  case user of
-    ExprLeaf file expr -> ExprNode file $ base : [ExprLeaf file expr]
-    ExprNode file childs -> ExprNode file $ base : childs
-
-linearizeExecTree :: ExecTree -> ([String], [(String, Expr)])
-linearizeExecTree (ExprLeaf file expr) = ([], [(file, expr)])
-linearizeExecTree (ExprNode file childs) =
-  let level = map linearizeExecTree childs in
-  let (files, exprs) =
-          foldl (\(accFs, accEs) (fs, es) -> (accFs ++ fs, accEs ++ es))
-                ([], []) level in
-    (files ++ [file], exprs)
-
-linearizeFile ::
-  String -> String -> (String -> IO Program) -> IO ([String], [(String, Expr)])
-linearizeFile dir file parser = do
-  execTree <- execTreeFromFile dir file parser
-  return $ linearizeExecTree execTree
-
-linearizeFileWithBase ::
+linearizeFileWithBaseWithPasses ::
   String -> String -> IO ([String], [(String, Expr)])
-linearizeFileWithBase dir file = do
-  base <- passedBaseExecTree
-  user <- passedUserExecTree dir file
-  return $ linearizeExecTree $ joinExecTree base user
+linearizeFileWithBaseWithPasses dir file = do
+  baseLinear <- linearizeBaseWithPasses
+  fileLinear <- linearizeFileWithPasses dir file
+  return $ joinLinearizations baseLinear fileLinear
 
+-----------------
 -- State initialization
 
 -- Allocate a list of environments that correspond to each file,
@@ -198,10 +97,15 @@ injectPrimBinds primEnvMem heap =
             (accs ++ [(id, funMem)], hp3))
         ([], heap) primInjectionPairs
   
+-- Environment settings
+envMemOffsetMem :: MemRef
+envMemOffsetMem = memFromInt 2
+
+-- Extracting the bare minimum
 rawInitsFromFileWithBase :: String -> String -> IO (Stack, Heap, MemRef, MemRef)
 rawInitsFromFileWithBase dir file = do
   let heap1 = heapEmpty
-  (files, fileExprPairs) <- linearizeFileWithBase dir file
+  (files, fileExprPairs) <- linearizeFileWithBaseWithPasses dir file
   -- Append a dummy file to make environment a space to inject prims
   let dummyFile = "$primitives"
   let files2 = dummyFile : files
@@ -218,6 +122,7 @@ rawInitsFromFileWithBase dir file = do
 initPureIds :: [Ident]
 initPureIds = primIds
 
+-- Actual state initialization
 rawInitStateWithBase :: String -> String -> IO State
 rawInitStateWithBase dir file = do
   (stack, heap, globalMem, primMem) <- rawInitsFromFileWithBase dir file
@@ -233,6 +138,9 @@ rawInitStateWithBase dir file = do
         }
     _ -> error $ "rawInitStateWithBase: somehow failed here"
 
+------
+-- Putting everything together
+
 guessEntryInfo :: String -> (String, String)
 guessEntryInfo file =
   let prefix = L.intercalate "/" $ init $ LS.splitOn "/" file in
@@ -247,5 +155,7 @@ loadFileGuessWithBase :: String -> IO State
 loadFileGuessWithBase file = do
   let (dir, tgt) = guessEntryInfo file
   loadFileWithBase dir tgt
+
+
 
 

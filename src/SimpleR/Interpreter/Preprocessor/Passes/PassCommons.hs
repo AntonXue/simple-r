@@ -2,10 +2,11 @@
 
 module SimpleR.Interpreter.Preprocessor.Passes.PassCommons where
 
+import SimpleR.Language
+
 data PassResult a =
     PassOkay a
   | PassFail [String]
-
 
 instance Functor PassResult where
   fmap f (PassOkay a) = PassOkay (f a)
@@ -24,13 +25,5 @@ instance Monad PassResult where
 
   (PassOkay a) >>= f = f a
   (PassFail msgs) >>= _ = PassFail msgs
-
-
-{-
-instance Functor (Either [String]) where
-  fmap f (Left a) = Left $ f a
--}
-
-
 
 

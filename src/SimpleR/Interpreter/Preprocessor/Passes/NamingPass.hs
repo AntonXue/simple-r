@@ -8,7 +8,6 @@ import SimpleR.R
 import SimpleR.Interpreter.Natives
 import SimpleR.Interpreter.Preprocessor.Passes.PassCommons
 
-
 -- Rename all the primitive functions that appear in the base program.
 renameBasePrimsPass :: Program -> PassResult Program
 renameBasePrimsPass baseProg =

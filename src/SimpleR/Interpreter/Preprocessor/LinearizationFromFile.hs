@@ -1,13 +1,23 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
-module SimpleR.Interpreter.Preprocessor.SyntaxFromRast
-  ( convert
+module SimpleR.Interpreter.Preprocessor.LinearizationFromFile
+  ( baseDir
+  , baseFile
+  , canonRFile
+  , progFromFile
+  , linearizeBase
+  , linearizeFile
+  , joinLinearizations
+  , linearizeFileWithBase
   ) where
 
-import SimpleR.R.Parser.Syntax
+import System.Directory
+
+import SimpleR.R
 import SimpleR.Language
 import SimpleR.Interpreter.Commons
 import SimpleR.Interpreter.Natives
 
+-- Conversion stuff
 class Convertable a b where
   convert :: a -> Int -> (b, Int)
 
@@ -205,4 +215,88 @@ instance Convertable RProgram Program where
   convert (RProgram rexprs) int =
     let (exprs, int2) = convertList rexprs int in
       (Program exprs, int2)
+
+-- Load the program
+baseDir :: IO String
+baseDir = do
+  curr <- getCurrentDirectory
+  return $ curr ++ "/base/R"
+
+baseFile :: IO String
+baseFile = return $ "custom.R"
+
+canonRFile :: String -> String -> String
+canonRFile dir file =
+  case file of
+    (':' : _) -> file -- absolute path
+    _ -> dir ++ "/" ++ file
+
+progFromFile :: String -> IO Program
+progFromFile file = do
+  maybeRProg <- parseRFile file
+  case maybeRProg of
+    Just rprog -> return $ fst $ convert rprog 1
+    _ -> error $ "progFromFile: failed to parse " ++ show file
+
+-- Execution tree linearization
+
+data ExecTree =
+    ExprLeaf String Expr
+  | ExprNode String [ExecTree]
+  deriving (Eq, Show, Read)
+
+catFromExpr :: Expr -> Either String Expr
+catFromExpr (LamApp (Var (fun @ Ident { idName = "source" }))
+                    [Arg (Const (StringConst src))]) = Left src
+catFromExpr (LamApp (Var (fun @ Ident { idName = "source" }))
+                    [Arg (Var id)]) = Left $ idName id
+catFromExpr expr = Right expr
+
+execTreeFromFile :: String -> String -> IO ExecTree
+execTreeFromFile dir file = do
+  let canonFile = canonRFile dir file
+  Program exprs <- progFromFile canonFile
+  let cats = map catFromExpr exprs
+  nodes <- mapM (\cat -> case cat of
+                    Left childFile -> execTreeFromFile dir childFile
+                    Right expr -> return $ ExprLeaf canonFile expr)
+                cats
+  return $ ExprNode canonFile nodes
+
+baseExecTree :: IO ExecTree
+baseExecTree = do
+  base <- baseDir
+  file <- baseFile
+  execTreeFromFile base file 
+
+fileExecTree :: String -> String -> IO ExecTree
+fileExecTree dir file = execTreeFromFile dir file
+
+linearizeExecTree :: ExecTree -> ([String], [(String, Expr)])
+linearizeExecTree (ExprLeaf file expr) = ([], [(file, expr)])
+linearizeExecTree (ExprNode file childs) =
+  let level = map linearizeExecTree childs in
+  let (files, exprs) =
+          foldl (\(accFs, accEs) (fs, es) -> (accFs ++ fs, accEs ++ es))
+                ([], []) level in
+    (files ++ [file], exprs)
+
+linearizeBase :: IO ([String], [(String, Expr)])
+linearizeBase = baseExecTree >>= return . linearizeExecTree
+
+linearizeFile :: String -> String -> IO ([String], [(String, Expr)])
+linearizeFile dir file = fileExecTree dir file >>= return . linearizeExecTree
+
+joinLinearizations ::
+  ([String], [(String, Expr)]) -> ([String], [(String, Expr)]) ->
+    ([String], [(String, Expr)])
+joinLinearizations (files1, pairs1) (files2, pairs2) =
+  (files1 ++ files2, pairs1 ++ pairs2)
+
+linearizeFileWithBase :: String -> String -> IO ([String], [(String, Expr)])
+linearizeFileWithBase dir file = do
+  baseLinear <- linearizeBase
+  fileLinear <- linearizeFile dir file
+  return $ joinLinearizations baseLinear fileLinear
+
 
