@@ -13,11 +13,11 @@ module SimpleR.Interpreter.Commons.Vector
   , Atom (..)
   , Vector (..)
   , idFromAtomString
-  -- , idFromSString
-  -- , vecFromConst
-  -- , vecLength
-  -- , vecResize
-  -- , vecToType
+  , vecFromConst
+  , vecLength
+  , vecResize
+  , vecToType
+  , vecPairJoinType
   ) where
 
 import Data.Maybe
@@ -26,26 +26,8 @@ import qualified Data.Complex as C
 import SimpleR.Language
 import SimpleR.Smt
 
-data Type = IntTy | DoubleTy | ComplexTy | BoolTy | StringTy
+data Type = BoolTy | IntTy | DoubleTy | ComplexTy | StringTy | NullTy
   deriving (Eq, Show, Read)
-
-class HskType a where
-  asRType :: a -> Type
-
-instance HskType Int where
-  asRType _ = IntTy
-
-instance HskType Double where
-  asRType _ = DoubleTy
-
-instance HskType Complex where
-  asRType _ = ComplexTy
-
-instance HskType String where
-  asRType _ = StringTy
-
-instance HskType Bool where
-  asRType _ = BoolTy
 
 data Atom a where
   Atom :: a -> Atom a
@@ -116,6 +98,7 @@ vecType (ComplexVec _) = ComplexTy
 vecType (BoolVec _) = BoolTy
 vecType (StringVec _) = StringTy
 vecType (SymVec _ ty) = ty
+vecType (NilVec) = NullTy
 
 vecInts :: Vector -> Maybe [Atom Int]
 vecInts (IntVec xs) = Just xs
@@ -287,22 +270,32 @@ vecToType (BoolVec xs) BoolTy = BoolVec $ (map . fmap) boolFromBool xs
 vecToType (SymVec sym _) ty = SymVec sym ty
 vecToType (NilVec) _ = NilVec
 
--- Operations
+-- Type lattice
+--  BoolTy <= IntTy <= Double <= Complex <= String <= Null
+instance Ord Type where
+  BoolTy `compare` BoolTy = EQ
+  BoolTy `compare` _ = LT
 
-data VecFun1 = VecFun1 (Vector -> Vector)
-data VecFun2 = VecFun2 (Vector -> Vector -> Vector)
-data VecFun3 = VecFun3 (Vector -> Vector -> Vector -> Vector)
+  IntTy `compare` IntTy = EQ
+  IntTy `compare` _ = LT
 
-applyVecFun1 :: VecFun1 -> Vector -> Vector
-applyVecFun1 (VecFun1 fun) vec1 = fun vec1
+  DoubleTy `compare` DoubleTy = EQ
+  DoubleTy `compare` _ = LT
 
-applyVecFun2 :: VecFun2 -> Vector -> Vector -> Vector
-applyVecFun2 (VecFun2 fun) vec1 vec2 = fun vec1 vec2
+  ComplexTy `compare` ComplexTy = EQ
+  ComplexTy `compare` _ = LT
 
-applyVecFun3 :: VecFun3 -> Vector -> Vector -> Vector -> Vector
-applyVecFun3 (VecFun3 fun) vec1 vec2 vec3 = fun vec1 vec2 vec3
+  StringTy `compare` StringTy = EQ
+  StringTy `compare` _ = LT
 
+  NullTy `compare` NullTy = EQ
+  NullTy `compare` _ = GT
 
+joinType :: Type -> Type -> Type
+joinType ty1 ty2 = if ty1 < ty2 then ty2 else ty1
 
-
+vecPairJoinType :: Vector -> Vector -> (Vector, Vector)
+vecPairJoinType vec1 vec2 =
+  let joinTy = joinType (vecType vec1) (vecType vec2) in
+    (vecToType vec1 joinTy, vecToType vec2 joinTy)
 

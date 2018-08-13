@@ -44,10 +44,12 @@ idAttrsNames :: Ident
 idAttrsNames = idFromString "names"
 
 idFresh :: State -> (Ident, State)
-idFresh = undefined
+idFresh state = idFreshSeeded "_" state
 
 idFreshSeeded :: String -> State -> (Ident, State)
-idFreshSeeded = undefined
+idFreshSeeded seed state =
+  let ct = stFreshCount state in
+    (idFromString $ seed ++ "#" ++ show ct, state { stFreshCount = ct + 1})
 
 -- Environment
 envEmpty :: Env
@@ -135,8 +137,7 @@ heapAllocList (hobj : hobjs) heap =
 
 heapAllocConst :: Const -> Heap -> (MemRef, Heap)
 heapAllocConst const heap =
-  -- heapAlloc (DataObj (VecVal (vecFromConst const)) attrsEmpty) heap
-  undefined
+  heapAlloc (DataObj (VecVal (vecFromConst const)) attrsEmpty) heap
 
 heapBinds :: Heap -> [(MemRef, HeapObj)]
 heapBinds heap = M.toList $ heapMap heap

@@ -13,7 +13,6 @@ primPureSet = S.fromList primIds
 
 data Ok = Ok deriving (Ord, Eq, Show, Read)
 
-
 checkArg :: Arg -> PassResult Arg
 checkArg (Arg expr) = argExpr expr >>= PassOkay . Arg
 checkArg (Named id expr) = argExpr expr >>= PassOkay . Named id

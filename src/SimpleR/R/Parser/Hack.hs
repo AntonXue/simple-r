@@ -7,6 +7,8 @@ import Text.Read
 
 import SimpleR.R.Parser.Syntax
 
+import Debug.Trace
+
 -- listToMaybe :: [a] -> Maybe a
 -- listToMaybe [] = Nothing
 -- listToMaybe (x:_) = Just x
@@ -29,25 +31,25 @@ port_path =
 
 parseRFile :: String -> IO (Maybe RProgram)
 parseRFile file = do
-  putStrLn $ "parseRFile: parsing " ++ file
+  traceIO $ "parseRFile: parsing " ++ file
   port_handles <- createProcess (proc port_path [file]) {std_out = CreatePipe}
   case port_handles of
     (_, Just out_handle, _, _) -> do
       raw_parse <- hGetContents out_handle
       case (maybeRead raw_parse) :: Maybe RProgram of
         Nothing -> do
-          putStrLn $ "parseRFile: " ++ file ++ " parse error"
-          putStrLn ">>>>> start dump"
-          putStrLn "## DUMP OMITTED"
-          putStrLn $ show raw_parse
-          putStrLn "<<<<< end dump"
+          traceIO $ "parseRFile: " ++ file ++ " parse error"
+          traceIO $ ">>>>> start dump"
+          traceIO $ "## DUMP OMITTED"
+          traceIO $ show raw_parse
+          traceIO $ "<<<<< end dump"
           return Nothing
 
         Just rprog -> do
-          putStrLn $ "parseRFile: " ++ file ++ " success"
+          traceIO $ "parseRFile: " ++ file ++ " success"
           return $ Just rprog
 
     _ -> do
-      putStrLn $ "parseRFile: " ++ file ++ " process error"
+      traceIO $ "parseRFile: " ++ file ++ " process error"
       return Nothing
 

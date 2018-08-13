@@ -276,6 +276,7 @@ primAll =
   , (">",   RPrimGt,      [])
   , ("!",   RPrimNot,     [])
 
+  -- Sequence aggregation
   , ("all", RPrimAll,     [])
   , ("any", RPrimAny,     [])
   , ("sum", RPrimSum,     [])
