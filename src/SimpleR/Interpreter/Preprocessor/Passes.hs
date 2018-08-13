@@ -26,7 +26,6 @@ filesProgToPairs files (Program exprs) =
   else
     error $ "filesProgToPairs: files and exprs not the same length"
 
-
 -- runBasePasses :: Program -> PassResult
 runBasePasses :: [(String, Expr)] -> PassResult [(String, Expr)]
 runBasePasses pairs = do
@@ -38,33 +37,15 @@ runBasePasses pairs = do
   -- Done!
   return $ pairs1
 
-
-
+-- 
 runUserPasses :: [(String, Expr)] -> PassResult [(String, Expr)]
 runUserPasses pairs = do
   -- Renaming primitives pass
   let (files1, prog1) = progFromPairs pairs
   p1 <- renameBasePrimsPass prog1
-  let pairs1 = filesProgToPairs files1 p1
-  
+
+  let pairsFinal = filesProgToPairs files1 p1
+
   -- Done!
-  return $ pairs1
-
-{-
-runBasePasses :: Program -> PassResult Program
-runBasePasses prog = do
-  p1 <- renameBasePrimsPass prog
-  return p1
--}
-
--- runUserPasses :: Program -> PassResult
-{-
-runUserPasses :: Program -> PassResult Program
-runUserPasses prog = do
-  p1 <- renameUserPrimsPass prog
-  p2 <- pureArgsPass p1
-  return p2
--}
-
-
+  return $ pairsFinal
 

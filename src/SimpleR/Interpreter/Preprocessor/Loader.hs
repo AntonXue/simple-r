@@ -12,6 +12,8 @@ import qualified Data.List.Split as LS
 import qualified Data.Map as M
 import System.Directory
 
+import Debug.Trace
+
 import SimpleR.Language
 import SimpleR.R
 import SimpleR.Interpreter.Commons
@@ -30,26 +32,29 @@ import SimpleR.Interpreter.Preprocessor.Passes
 
 -----
 -- Parsing the R file + passes
-linearizeBaseWithPasses :: IO ([String], [(String, Expr)])
+linearizeBaseWithPasses :: IO (PassResult ([String], [(String, Expr)]))
 linearizeBaseWithPasses = do
   (files, pairs) <- linearizeBase
   case runBasePasses pairs of
-    PassOkay okays -> return (files, okays)
-    PassFail msgs -> error $ "linearizeBaseWithPasses: " ++ (show msgs)
+    PassOkay okays -> return (PassOkay (files, okays))
+    PassFail msgs -> return (PassFail msgs)
 
-linearizeFileWithPasses :: String -> String -> IO ([String], [(String, Expr)])
+linearizeFileWithPasses ::
+  String -> String -> IO (PassResult ([String], [(String, Expr)]))
 linearizeFileWithPasses dir file = do
   (files, pairs) <- linearizeFile dir file
   case runUserPasses pairs of
-    PassOkay okays -> return (files, okays)
-    PassFail msgs -> error $ "linearizeFileWithPasses: " ++ (show msgs)
+    PassOkay okays -> return (PassOkay (files, okays))
+    PassFail msgs -> return (PassFail msgs)
 
 linearizeFileWithBaseWithPasses ::
-  String -> String -> IO ([String], [(String, Expr)])
+  String -> String -> IO (PassResult ([String], [(String, Expr)]))
 linearizeFileWithBaseWithPasses dir file = do
-  baseLinear <- linearizeBaseWithPasses
-  fileLinear <- linearizeFileWithPasses dir file
-  return $ joinLinearizations baseLinear fileLinear
+  basePass <- linearizeBaseWithPasses
+  filePass <- linearizeFileWithPasses dir file
+  case (basePass, filePass) of
+    (PassOkay baseLinear, PassOkay fileLinear) ->
+      return $ PassOkay $ joinLinearizations baseLinear fileLinear
 
 -----------------
 -- State initialization
@@ -105,18 +110,22 @@ envMemOffsetMem = memFromInt 2
 rawInitsFromFileWithBase :: String -> String -> IO (Stack, Heap, MemRef, MemRef)
 rawInitsFromFileWithBase dir file = do
   let heap1 = heapEmpty
-  (files, fileExprPairs) <- linearizeFileWithBaseWithPasses dir file
-  -- Append a dummy file to make environment a space to inject prims
   let dummyFile = "$primitives"
-  let files2 = dummyFile : files
-  let fileExprPairs2 = (dummyFile, Var idNull) : fileExprPairs
-  -- Allocate the file environments; dummyFile guaranteed to make space
-  let (fileEnvPairs, heap2) = allocFileEnvs files2 envMemOffsetMem heap1
-  let frames = framesFromPairs fileExprPairs2 fileEnvPairs
-  case (fileEnvPairs, reverse fileEnvPairs) of
-    ((_, primMem) : _, (_, globalMem) : _) ->
-      return (stackPushList frames stackEmpty, heap2, globalMem, primMem)
-    _ -> error $ "rawInitsFromFileWithBase: initialization failed"
+  pass <- linearizeFileWithBaseWithPasses dir file
+  case pass of
+    PassOkay (files, fileExprPairs) -> do
+      -- Append a dummy file to make environment a space to inject prims
+      let files2 = dummyFile : files
+      let fileExprPairs2 = (dummyFile, Var idNull) : fileExprPairs
+      -- Allocate the file environments; dummyFile guaranteed to make space
+      let (fileEnvPairs, heap2) = allocFileEnvs files2 envMemOffsetMem heap1
+      let frames = framesFromPairs fileExprPairs2 fileEnvPairs
+      case (fileEnvPairs, reverse fileEnvPairs) of
+        ((_, primMem) : _, (_, globalMem) : _) ->
+          return (stackPushList frames stackEmpty, heap2, globalMem, primMem)
+        _ -> error $ "rawInitsFromFileWithBase: initialization failed"
+    PassFail msgs ->
+        error $ "rawInitsFromFileWithBase: " ++ (show msgs)
 
 -- At first, treat the base ids as pure
 initPureIds :: [Ident]

@@ -16,7 +16,8 @@ let parseFile filename =
         print_string (string_of_int (pos.Lexing.pos_cnum -
                                      pos.Lexing.pos_bol));
         print_endline ".";
-        failwith "port: syntax error"
+        (* failwith "port: syntax error" *)
+        exit 0
       end in
       let _ = close_in channel in
       (* print_endline ("Okay!"); *)

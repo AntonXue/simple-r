@@ -11,6 +11,7 @@ module SimpleR.Interpreter.Preprocessor.LinearizationFromFile
   ) where
 
 import System.Directory
+import Debug.Trace
 
 import SimpleR.R
 import SimpleR.Language
@@ -66,7 +67,9 @@ instance Convertable RArg Arg where
     let (expr, int2) = convert rexpr int in
       (Named id expr, int2)
   convert (RVarArg) int = (VarArg, int)
-  convert arg _ = error $ "convert: " ++ show arg
+  convert arg int = 
+    trace ("convert: unsupported arg " ++ show arg ++ ", making Null: ") $
+          (Arg $ Var idNull, int)
 
 instance Convertable RUnOp RPrim where
   convert RUMinus int = (RPrimMinus, int)
@@ -105,7 +108,10 @@ instance Convertable RBinOp RPrim where
   convert RGetPackage int = (RPrimGetPackage, int)
   convert RGetPackageInt int = (RPrimGetPackageInt, int)
   -- convert RMatch int
-  convert binop _ = error $ "convert: unsupported: " ++ show binop
+  convert binop int = 
+    trace ("convert: unsupported binop " ++ show binop ++ ", making RPRIM") $
+          (RPRIM, int)
+    
 
 instance Convertable RExpr Expr where
   convert (RConst rconst) int =
@@ -236,7 +242,8 @@ progFromFile file = do
   maybeRProg <- parseRFile file
   case maybeRProg of
     Just rprog -> return $ fst $ convert rprog 1
-    _ -> error $ "progFromFile: failed to parse " ++ show file
+    _ -> trace ("progFromFile: failed to parse " ++ show file) $
+               return $ Program []
 
 -- Execution tree linearization
 

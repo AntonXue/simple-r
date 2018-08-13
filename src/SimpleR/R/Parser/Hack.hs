@@ -38,7 +38,8 @@ parseRFile file = do
         Nothing -> do
           putStrLn $ "parseRFile: " ++ file ++ " parse error"
           putStrLn ">>>>> start dump"
-          putStrLn $ show raw_parse
+          putStrLn "## DUMP OMITTED"
+          -- putStrLn $ show raw_parse
           putStrLn "<<<<< end dump"
           return Nothing
 
