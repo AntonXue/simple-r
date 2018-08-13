@@ -104,7 +104,7 @@ instance Convertable RBinOp RPrim where
   -- convert RMatrixMult int
   -- convert ROuterProd int
   -- convert RKronProd int
-  -- convert RObjAttr int
+  convert RObjAttr int = (RPrimObjAttr, int)
   convert RGetPackage int = (RPrimGetPackage, int)
   convert RGetPackageInt int = (RPrimGetPackageInt, int)
   -- convert RMatch int
@@ -112,7 +112,6 @@ instance Convertable RBinOp RPrim where
     trace ("convert: unsupported binop " ++ show binop ++ ", making RPRIM") $
           (RPRIM, int)
     
-
 instance Convertable RExpr Expr where
   convert (RConst rconst) int =
     let (const, int2) = convert rconst int in (Const const, int2)
@@ -241,7 +240,8 @@ progFromFile :: String -> IO Program
 progFromFile file = do
   maybeRProg <- parseRFile file
   case maybeRProg of
-    Just rprog -> return $ fst $ convert rprog 1
+    Just rprog -> do
+      return $ fst $ convert rprog 1
     _ -> trace ("progFromFile: failed to parse " ++ show file) $
                return $ Program []
 

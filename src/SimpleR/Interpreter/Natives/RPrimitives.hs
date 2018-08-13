@@ -38,6 +38,8 @@ data RPrim =
   | RPrimDimNames
   | RPrimDimNamesAssign
 
+  | RPrimObjAttr
+
   | RPrimIsArray
   | RPrimIsFinite
   | RPrimIsInfinite
@@ -299,6 +301,9 @@ primAll =
   -- Lookups
   , ("::",  RPrimGetPackage,      [])
   , (":::", RPrimGetPackageInt,   [])
+
+  -- Objects
+  , ("@", RPrimObjAttr, [])
 
   -- Weird things
   , ("~",   RPrimForm,            [])

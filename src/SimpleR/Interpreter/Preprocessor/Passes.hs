@@ -2,6 +2,9 @@ module SimpleR.Interpreter.Preprocessor.Passes
   ( module SimpleR.Interpreter.Preprocessor.Passes.PassCommons
   , module SimpleR.Interpreter.Preprocessor.Passes.NamingPass
   , module SimpleR.Interpreter.Preprocessor.Passes.PureArgsPass
+  , module SimpleR.Interpreter.Preprocessor.Passes.FunCalledPass
+  , module SimpleR.Interpreter.Preprocessor.Passes.IdUsedPass
+  , module SimpleR.Interpreter.Preprocessor.Passes.PrimUsedPass
   , runBasePasses
   , runUserPasses
   ) where
@@ -11,6 +14,9 @@ import SimpleR.Language
 import SimpleR.Interpreter.Preprocessor.Passes.PassCommons
 import SimpleR.Interpreter.Preprocessor.Passes.NamingPass
 import SimpleR.Interpreter.Preprocessor.Passes.PureArgsPass
+import SimpleR.Interpreter.Preprocessor.Passes.FunCalledPass
+import SimpleR.Interpreter.Preprocessor.Passes.IdUsedPass
+import SimpleR.Interpreter.Preprocessor.Passes.PrimUsedPass
 
 progFromPairs :: [(String, Expr)] -> ([String], Program)
 progFromPairs pairs =
