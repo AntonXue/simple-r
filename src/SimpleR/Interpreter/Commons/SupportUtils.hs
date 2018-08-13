@@ -89,12 +89,10 @@ heapEnvLookup envMem id heap
 
 heapEnvLookupDeep :: MemRef -> Ident -> Heap -> Maybe MemRef
 heapEnvLookupDeep envMem id heap
-  | Just (DataObj (EnvVal env) _) <- heapLookup envMem heap
-  , Just mem <- envLookup id env = Just mem
-
-  | Just (DataObj (EnvVal env) _) <- heapLookup envMem heap
-  , Nothing <- envLookup id env =
-      heapEnvLookup (envPredMem env) id heap
+  | Just (DataObj (EnvVal env) _) <- heapLookup envMem heap =
+      case envLookup id env of
+        Just mem -> Just mem
+        _ -> heapEnvLookupDeep (envPredMem env) id heap
 
   | otherwise = Nothing
 
