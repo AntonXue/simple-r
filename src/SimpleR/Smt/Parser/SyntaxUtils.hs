@@ -2,16 +2,16 @@ module SimpleR.Smt.Parser.SyntaxUtils where
 
 import SimpleR.Smt.Parser.Syntax
 
-stringFromSmtSymb :: SmtSymbol -> String
-stringFromSmtSymb (SmtSymbol str) = str
+stringFromSymb :: SmtSymbol -> String
+stringFromSymb (SmtSymbol str) = str
 
-stringFromSmtId :: SmtIdent -> String
-stringFromSmtId (SmtIdent symb) = stringFromSmtSymb symb
-stringFromSmtId (SmtIdentIndInt symb _) = stringFromSmtSymb symb
-stringFromSmtId (SmtIdentIndVar symb) = stringFromSmtSymb symb
-stringFromSmtId (SmtIdentQualVar symb _) = stringFromSmtSymb symb
-stringFromSmtId (SmtIdentQualSort symb _) = stringFromSmtSymb symb
+stringFromSid :: SmtIdent -> String
+stringFromSid (SmtIdent symb) = stringFromSymb symb
+stringFromSid (SmtIdentIndInt symb _) = stringFromSymb symb
+stringFromSid (SmtIdentIndVar symb) = stringFromSymb symb
+stringFromSid (SmtIdentQualVar symb _) = stringFromSymb symb
+stringFromSid (SmtIdentQualSort symb _) = stringFromSymb symb
 
-smtIdFromString :: String -> SmtIdent
-smtIdFromString str = SmtIdent $ SmtSymbol str
+sidFromString :: String -> SmtIdent
+sidFromString str = SmtIdent $ SmtSymbol str
 

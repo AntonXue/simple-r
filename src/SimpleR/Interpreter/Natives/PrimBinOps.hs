@@ -33,15 +33,13 @@ data VecBinOp = VecBinOp
   , symBinOp :: SmtIdent -> SmtIdent -> Type -> State -> ([SmtExpr], State)
   }
 
-applyBinOp :: VecBinOp -> Vector ->  Vector -> State ->
-  (Either Vector [SmtExpr], State)
-applyBinOp op rawVec1 rawVec2 state =
-  let (vec1, vec2) = vecPairJoinType rawVec1 rawVec2 in
-    case (vec1, vec2) of
-      (SymVec sym1 _, _) -> undefined
-      (_, SymVec sym2 _) -> undefined
+applyBinOp :: VecBinOp -> MemRef -> MemRef -> State ->
+  Maybe (Either Vector [SmtCmd], State)
+applyBinOp op vecMem1 vecMem2 state
+  | Just (DataObj (VecVal vec1) attrs1) <- heapLookup vecMem1 $ stHeap state
+  , Just (DataObj (VecVal vec2) attrs2) <- heapLookup vecMem2 $ stHeap state =
+      undefined
 
-      (IntVec _, _) -> undefined
-
+  | otherwise = Nothing
 
 

@@ -4,14 +4,23 @@ module SimpleR.Interpreter.Commons.SmtTranslation
 
 import SimpleR.Language
 import SimpleR.Interpreter.Commons.Support
+import SimpleR.Interpreter.Commons.SupportUtils
+import SimpleR.Interpreter.Commons.Vector
 import SimpleR.Smt
 
-smtIdFromMem :: MemRef -> SmtIdent
-smtIdFromMem mem = smtIdFromString $ "mem$" ++ (show $ memAddr mem)
+smtCanonMem :: MemRef -> String
+smtCanonMem mem = "mem$" ++ (show $ memAddr mem)
 
-smtIdLenId :: SmtIdent -> SmtIdent
-smtIdLenId id = smtIdFromString $ stringFromSmtId id ++ "$length"
+smtCanonMemLen :: MemRef -> String
+smtCanonMemLen mem = smtCanonMem mem ++ "$length"
 
-smtMemLenId :: MemRef -> SmtIdent
-smtMemLenId mem = smtIdLenId $ smtIdFromMem mem
+symbFromMem :: MemRef -> SmtIdent
+symbFromMem mem = sidFromString $ smtCanonMem mem
+
+lenSidFromSid :: SmtIdent -> SmtIdent
+lenSidFromSid sid = sidFromString $ stringFromSid sid ++ "$length"
+
+symVecFromVec :: MemRef -> Vector -> State -> (MemRef, State)
+symVecFromVec mem vec state = undefined
+
 

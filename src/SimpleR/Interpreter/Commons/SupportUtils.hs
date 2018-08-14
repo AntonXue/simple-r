@@ -236,14 +236,20 @@ frameMk envMem cont =
 
 -- Constraint
 constrEmpty :: Constraint
-constrEmpty = Constraint { constrList = [] }
+constrEmpty =
+  Constraint { constrAssertList = [], constrPreList = [], constrPostList = [] }
 
-constrAppend :: SmtExpr -> Constraint -> Constraint
-constrAppend smt constr = constrAppendList [smt] constr
+constrAssertsAppend :: [SmtExpr] -> Constraint -> Constraint
+constrAssertsAppend smts constr =
+  constr { constrAssertList = (constrAssertList constr) ++ smts }
 
-constrAppendList :: [SmtExpr] -> Constraint -> Constraint
-constrAppendList smts constr =
-  constr { constrList = (constrList constr) ++ smts }
+constrPresAppend :: [SmtCmd] -> Constraint -> Constraint
+constrPresAppend smts constr =
+  constr { constrPreList = (constrPreList constr) ++ smts }
+
+constrPostsAppend :: [SmtCmd] -> Constraint -> Constraint
+constrPostsAppend smts constr =
+  constr { constrPostList = (constrPostList constr) ++ smts }
 
 -- Pures
 puresEmpty :: Pures

@@ -44,7 +44,9 @@ data Attributes = Attributes
   } deriving (Eq, Show, Read)
 
 data Constraint = Constraint
-  { constrList :: [SmtExpr]
+  { constrAssertList :: [SmtExpr]
+  , constrPreList :: [SmtCmd]
+  , constrPostList :: [SmtCmd]
   } deriving (Eq, Show, Read)
 
 data Stack = Stack

@@ -294,8 +294,18 @@ instance Ord Type where
 joinType :: Type -> Type -> Type
 joinType ty1 ty2 = if ty1 < ty2 then ty2 else ty1
 
-vecPairJoinType :: Vector -> Vector -> (Vector, Vector)
-vecPairJoinType vec1 vec2 =
+vecPairJoinType :: (Vector, Vector) -> (Vector, Vector)
+vecPairJoinType (vec1, vec2) =
   let joinTy = joinType (vecType vec1) (vecType vec2) in
     (vecToType vec1 joinTy, vecToType vec2 joinTy)
+
+vecPairLengthen :: (Vector, Vector) -> (Vector, Vector)
+vecPairLengthen (vec1, vec2) =
+  let len1 = vecLength vec1 in
+  let len2 = vecLength vec2 in
+    if len1 > len2 then
+      (vec1, vecResize len1 vec2)
+    else
+      (vecResize len2 vec1, vec2)
+
 

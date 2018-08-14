@@ -34,7 +34,7 @@ data RPrim =
 
   | RPrimC
   | RPrimDim
-  | RPrimDimArrow
+  | RPrimDimAssign
   | RPrimDimNames
   | RPrimDimNamesAssign
 
@@ -200,7 +200,7 @@ primAll =
   , ("[[",  RPrimVecProj,         [])
   , ("[",   RPrimVecSub,          [])
   , ("dim",         RPrimDim,            [])
-  , ("dim<-",       RPrimDimArrow,       [])
+  , ("dim<-",       RPrimDimAssign,       [])
   , ("dimnames",    RPrimDimNames,       [])
   , ("dimnames<-",  RPrimDimNamesAssign, [])
   , ("length",      RPrimLength,        [])

@@ -30,6 +30,35 @@ testObjAttrFails prog =
     PassOkay _ -> False
     PassFail _ -> True
 
+testIdUsed :: Ident -> Program -> Bool
+testIdUsed id prog =
+  rename id (idFromString "FUFUFUFUFUFUF") prog /= prog
+
+flaggedPrims :: [RPrim]
+flaggedPrims =
+  [RPrimObjAttr, RPrimForm, RPrimHelp, RPrimDim, RPrimSuperAssign,
+   RPrimGetPackage, RPrimGetPackageInt,
+   RPrimDim, RPrimDimAssign,
+   RPrimDimNames, RPrimDimNamesAssign,
+   RPrimLength, RPrimLengthAssign,
+   RPrimLevels, RPrimLevelsAssign,
+   RPrimNames, RPrimNamesAssign,
+   RPrimGamma, RPrimLGamma, RPrimDiGamma, RPrimTriGamma]
+
+testPrimsUsed :: Program -> [RPrim]
+testPrimsUsed prog =
+  filter ((flip testIdUsed) prog . idFromRPrim) flaggedPrims
+
+flaggedIds :: [Ident]
+flaggedIds =
+  (map idFromString ["matrix"])
+  ++
+  map idFromRPrim flaggedPrims
+
+testFlaggedIdsUsed :: Program -> [Ident]
+testFlaggedIdsUsed prog =
+  filter ((flip testIdUsed) prog) flaggedIds
+
 bar :: String
 bar = "********************************************************************"
 
@@ -61,6 +90,20 @@ testPassesOnDir dir = do
                                   ++ show numParsedPairs
   _ <- mapM (\(f, _) -> putStrLn $ "  " ++ f) $ filter snd pureArgsPairs
 
+  -- Test the flagged ids used
+  putStrLn ""
+  putStrLn bar
+  let fileIdsPairs = map (\(f, p) -> (f, testFlaggedIdsUsed p)) parsedPairs
+  let fileIdPairsFlat = concat [map ((,) f) ids | (f, ids) <- fileIdsPairs]
+  -- idCountPairs :: [(Ident, Int)]
+  -- let idCountPairs = map (\i -> (sum $ length $ filter ((== i) . snd) fileIdPairsFlat)) flaggedIds
+  let idCountPairs = map (\i -> (i, length $ filter ((== i) . snd) fileIdPairsFlat)) flaggedIds
+
+  putStrLn $ "tpod: flagged id tests"
+  _ <- mapM_ (\(i, c) -> putStrLn $ "  " ++ show (idName i, c)) idCountPairs
+  -- _ <- mapM_ (putStrLn . show) fileIdsPairs
+
+{-
   -- TEST: rm calls
   putStrLn ""
   putStrLn bar
@@ -81,5 +124,7 @@ testPassesOnDir dir = do
 
 
   putStrLn "********************************************"
+-}
+  putStrLn bar
   return ()
 
