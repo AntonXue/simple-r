@@ -3,6 +3,7 @@ module SimpleR.Interpreter.Preprocessor.TestPasses
   ) where
 
 import System.Directory
+import Data.Char
 import Data.List
 
 import SimpleR.Language
@@ -29,11 +30,15 @@ testObjAttrFails prog =
     PassOkay _ -> False
     PassFail _ -> True
 
+bar :: String
+bar = "********************************************************************"
+
 testPassesOnDir :: String -> IO ()
 testPassesOnDir dir = do
   -- Figure out which things to parse
   files <- getDirectoryContents dir
-  let onlyRFiles = filter (isSuffixOf ".R") files
+  let onlyRFiles = sortBy (\a b -> (map toUpper a) `compare` (map toUpper b)) $
+                   filter (isSuffixOf ".R") files
 
   -- Load the Program(s)
   allProgs <- mapM progFromFile $ map (canonRFile dir) onlyRFiles
@@ -44,27 +49,35 @@ testPassesOnDir dir = do
 
   -- Printing this makes IO force everything before to finish
   putStrLn ""
-  putStrLn "********************************************"
+  putStrLn bar
   putStrLn $ "tpod: " ++ show numParsedPairs ++ "/" ++ show numAllPairs
 
   -- TEST: pure args
+  putStrLn ""
+  putStrLn bar
   let pureArgsPairs = map (\(f, p) -> (f, testPureArgCallFails p)) parsedPairs
   let numPureArgsPairs = length $ filter snd pureArgsPairs
   putStrLn $ "tpod: [pure args] " ++ show numPureArgsPairs ++ "/"
                                   ++ show numParsedPairs
+  _ <- mapM (\(f, _) -> putStrLn $ "  " ++ f) $ filter snd pureArgsPairs
 
   -- TEST: rm calls
+  putStrLn ""
+  putStrLn bar
   let rmCallPairs = map (\(f, p) -> (f, testRmCallFails p)) parsedPairs
   let numRmCallPairs = length $ filter snd rmCallPairs
   putStrLn $ "tpod: [rm calls] " ++ show numRmCallPairs ++ "/"
                                  ++ show numParsedPairs
+  _ <- mapM (\(f, _) -> putStrLn $ "  " ++ f) $ filter snd rmCallPairs
 
   -- TEST: objects used
-  let objUsedPairs = map (\(f, p) -> (f, testObjAttrFails p)) parsedPairs
-  let numObjAttrPairs = length $ filter snd objUsedPairs
+  putStrLn ""
+  putStrLn bar
+  let objAttrPairs = map (\(f, p) -> (f, testObjAttrFails p)) parsedPairs
+  let numObjAttrPairs = length $ filter snd objAttrPairs
   putStrLn $ "tpod: [obj attr] " ++ show numObjAttrPairs ++ "/"
                                  ++ show numParsedPairs
-
+  _ <- mapM (\(f, _) -> putStrLn $ "  " ++ f) $ filter snd objAttrPairs
 
 
   putStrLn "********************************************"
