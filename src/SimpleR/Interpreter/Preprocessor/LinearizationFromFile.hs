@@ -236,14 +236,14 @@ canonRFile dir file =
     (':' : _) -> file -- absolute path
     _ -> dir ++ "/" ++ file
 
-progFromFile :: String -> IO Program
+progFromFile :: String -> IO (Maybe Program)
 progFromFile file = do
   maybeRProg <- parseRFile file
   case maybeRProg of
     Just rprog -> do
-      return $ fst $ convert rprog 1
+      return $ Just $ fst $ convert rprog 1
     _ -> trace ("progFromFile: failed to parse " ++ show file) $
-               return $ Program []
+               return $ Nothing
 
 -- Execution tree linearization
 
@@ -259,24 +259,30 @@ catFromExpr (LamApp (Var (fun @ Ident { idName = "source" }))
                     [Arg (Var id)]) = Left $ idName id
 catFromExpr expr = Right expr
 
-execTreeFromFile :: String -> String -> IO ExecTree
+execTreeFromFile :: String -> String -> IO (Maybe ExecTree)
 execTreeFromFile dir file = do
   let canonFile = canonRFile dir file
-  Program exprs <- progFromFile canonFile
-  let cats = map catFromExpr exprs
-  nodes <- mapM (\cat -> case cat of
-                    Left childFile -> execTreeFromFile dir childFile
-                    Right expr -> return $ ExprLeaf canonFile expr)
-                cats
-  return $ ExprNode canonFile nodes
+  mbProg <- progFromFile canonFile
+  case mbProg of
+    Just (Program exprs) -> do
+      let cats = map catFromExpr exprs
+      mbNodes <- mapM (\cat -> case cat of
+                        Left childFile -> execTreeFromFile dir childFile
+                        Right expr -> return $ Just $ ExprLeaf canonFile expr)
+                    cats
+      case sequence mbNodes of
+        Just nodes -> return $ Just $ ExprNode canonFile nodes
+        _ -> return Nothing
+    _ -> trace ("execTreeFromFile: failed to load exectree: " ++ canonFile) $
+                return Nothing
 
-baseExecTree :: IO ExecTree
+baseExecTree :: IO (Maybe ExecTree)
 baseExecTree = do
   base <- baseDir
   file <- baseFile
   execTreeFromFile base file 
 
-fileExecTree :: String -> String -> IO ExecTree
+fileExecTree :: String -> String -> IO (Maybe ExecTree)
 fileExecTree dir file = execTreeFromFile dir file
 
 linearizeExecTree :: ExecTree -> ([String], [(String, Expr)])
@@ -288,11 +294,19 @@ linearizeExecTree (ExprNode file childs) =
                 ([], []) level in
     (files ++ [file], exprs)
 
-linearizeBase :: IO ([String], [(String, Expr)])
-linearizeBase = baseExecTree >>= return . linearizeExecTree
+linearizeBase :: IO (Maybe ([String], [(String, Expr)]))
+linearizeBase = do
+  mbBase <- baseExecTree
+  case mbBase of
+    Just base -> return $ Just $ linearizeExecTree base
+    _ -> return $ Nothing
 
-linearizeFile :: String -> String -> IO ([String], [(String, Expr)])
-linearizeFile dir file = fileExecTree dir file >>= return . linearizeExecTree
+linearizeFile :: String -> String -> IO (Maybe ([String], [(String, Expr)]))
+linearizeFile dir file = do
+  mbFile <- fileExecTree dir file
+  case mbFile of
+    Just file -> return $ Just $ linearizeExecTree file
+    _ -> return $ Nothing
 
 joinLinearizations ::
   ([String], [(String, Expr)]) -> ([String], [(String, Expr)]) ->
@@ -300,10 +314,14 @@ joinLinearizations ::
 joinLinearizations (files1, pairs1) (files2, pairs2) =
   (files1 ++ files2, pairs1 ++ pairs2)
 
-linearizeFileWithBase :: String -> String -> IO ([String], [(String, Expr)])
+linearizeFileWithBase ::
+  String -> String -> IO (Maybe ([String], [(String, Expr)]))
 linearizeFileWithBase dir file = do
-  baseLinear <- linearizeBase
-  fileLinear <- linearizeFile dir file
-  return $ joinLinearizations baseLinear fileLinear
+  mbBaseLinear <- linearizeBase
+  mbFileLinear <- linearizeFile dir file
+  case (mbBaseLinear, mbFileLinear) of
+    (Just baseLinear, Just fileLinear) ->
+      return $ Just $ joinLinearizations baseLinear fileLinear
+    _ -> return $ Nothing
 
 

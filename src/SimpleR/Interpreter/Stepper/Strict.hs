@@ -84,6 +84,7 @@ unwindToLamBCont stack = do
     LamBCont funMem -> return (funMem, lEnvMem, stack2)
     _ -> unwindToLamBCont stack2
 
+-------
 -- Rules
 rule_Ident :: State -> [State]
 rule_Ident state
@@ -374,17 +375,24 @@ rule_ReturnGo state
                , stStack = stack2 }]
   | otherwise = []
 
+rule_ResultDiscard :: State -> [State]
+rule_ResultDiscard state
+  | (ResultRed _) <- stRedex state
+  , Just (ExprCont expr, envMem, stack2) <- stackPopV $ stStack state =
+      [state { stRedex = EvalRed envMem expr
+             , stStack = stack2 }]
+  | otherwise = []
+
 rule_Blank :: State -> [State]
 rule_Blank _ = []
 
 
 data Rule =
     RuleIdent
-  | RuleMemRef
   | RuleConst
+  | RuleSeqEmpty
   | RuleSeq
   | RuleLamAbs
-  | RuleLamApp
   | RuleLamAppFun
   | RuleLamAppFunRet
   | RuleLamAppArg
@@ -393,30 +401,31 @@ data Rule =
   | RuleLamAppRet
   | RuleNativeLamApp
   | RuleAssignId
-  | RuleAssignStr
   | RuleAssignRet
   | RuleIf
   | RuleIfRet
-  | RuleIfSym
+  | RuleIfRetSym
   | RuleWhile
   | RuleWhileTrue
   | RuleWhileBodyRet
   | RuleWhileFalse
   | RuleWhileSym
-  | RuleBreak
-  | RuleNext
-  | RuleReturn
-  | RuleDiscardRetCont
+  | RuleBreakStop
+  | RuleBreakGo
+  | RuleNextStop
+  | RuleNextGo
+  | RuleReturnStop
+  | RuleReturnGo
+  | RuleResultDiscard
   | RuleBlank
   deriving (Ord, Eq, Show, Read)
 
 rulePairs :: [(Rule, State -> [State])]
 rulePairs =
-  undefined
-{-
-  [ (RuleIdent, rule_Ident)
-  -- , (RuleMemRef, rule_MemRef)
+  [ 
+    (RuleIdent, rule_Ident)
   , (RuleConst, rule_Const)
+  , (RuleSeqEmpty, rule_SeqEmpty)
   , (RuleSeq, rule_Seq)
   , (RuleLamAbs, rule_LamAbs)
   , (RuleLamAppFun, rule_LamAppFun)
@@ -427,20 +436,21 @@ rulePairs =
   , (RuleLamAppRet, rule_LamAppRet)
   , (RuleNativeLamApp, rule_NativeLamApp)
   , (RuleAssignId, rule_AssignId)
-  , (RuleAssignStr, rule_AssignStr)
   , (RuleAssignRet, rule_AssignRet)
   , (RuleIf, rule_If)
   , (RuleIfRet, rule_IfRet)
-  , (RuleIfSym, rule_IfRetSym)
+  , (RuleIfRetSym, rule_IfRetSym)
   , (RuleWhile, rule_While)
   , (RuleWhileTrue, rule_WhileTrue)
   , (RuleWhileBodyRet, rule_WhileBodyRet)
   , (RuleWhileFalse, rule_WhileFalse)
   , (RuleWhileSym, rule_WhileSym)
-  , (RuleBreak, rule_Break)
-  , (RuleNext, rule_Next)
-  , (RuleReturn, rule_Return)
-  , (RuleDiscardRetCont, rule_DiscardRetCont)
-  , (RuleBlank, rule_Blank)]
--}
-
+  , (RuleBreakStop, rule_BreakStop)
+  , (RuleBreakGo, rule_BreakGo)
+  , (RuleNextStop, rule_NextStop)
+  , (RuleNextGo, rule_NextGo)
+  , (RuleReturnStop, rule_ReturnStop)
+  , (RuleReturnGo, rule_ReturnGo)
+  , (RuleResultDiscard, rule_ResultDiscard)
+  , (RuleBlank, rule_Blank) ]
+ 

@@ -3,7 +3,9 @@ module SimpleR.Interpreter.Preprocessor.Loader
     linearizeBaseWithPasses
   , linearizeFileWithPasses
   , linearizeFileWithBaseWithPasses
+  , loadFile
   , loadFileWithBase
+  , loadFileGuess
   , loadFileGuessWithBase
   ) where
 
@@ -34,18 +36,26 @@ import SimpleR.Interpreter.Preprocessor.Passes
 -- Parsing the R file + passes
 linearizeBaseWithPasses :: IO (PassResult ([String], [(String, Expr)]))
 linearizeBaseWithPasses = do
-  (files, pairs) <- linearizeBase
-  case runBasePasses pairs of
-    PassOkay okays -> return (PassOkay (files, okays))
-    PassFail msgs -> return (PassFail msgs)
+  mbLinear <- linearizeBase
+  case mbLinear of 
+    Just (files, pairs) ->
+      case runBasePasses pairs of
+        PassOkay okays -> return (PassOkay (files, okays))
+        PassFail msgs -> return (PassFail msgs)
+    _ ->
+      return $ PassFail ["linearizeBaseWithPasses: failed to linearize"]
 
 linearizeFileWithPasses ::
   String -> String -> IO (PassResult ([String], [(String, Expr)]))
 linearizeFileWithPasses dir file = do
-  (files, pairs) <- linearizeFile dir file
-  case runUserPasses pairs of
-    PassOkay okays -> return (PassOkay (files, okays))
-    PassFail msgs -> return (PassFail msgs)
+  mbLinear <- linearizeFile dir file
+  case mbLinear of
+    Just (files, pairs) ->
+      case runUserPasses pairs of
+        PassOkay okays -> return (PassOkay (files, okays))
+        PassFail msgs -> return (PassFail msgs)
+    _ ->
+      return $ PassFail ["linearizeFileWithPasses: filed to linearize"]
 
 linearizeFileWithBaseWithPasses ::
   String -> String -> IO (PassResult ([String], [(String, Expr)]))
@@ -55,6 +65,9 @@ linearizeFileWithBaseWithPasses dir file = do
   case (basePass, filePass) of
     (PassOkay baseLinear, PassOkay fileLinear) ->
       return $ PassOkay $ joinLinearizations baseLinear fileLinear
+    _ ->
+      return $
+        PassFail ["linearizeFileWithBasesWithPasses: failed to linearize"]
 
 -----------------
 -- State initialization
@@ -106,13 +119,17 @@ injectPrimBinds primEnvMem heap =
 envMemOffsetMem :: MemRef
 envMemOffsetMem = memFromInt 2
 
--- Extracting the bare minimum
-rawInitsFromFileWithBase :: String -> String -> IO (Stack, Heap, MemRef, MemRef)
-rawInitsFromFileWithBase dir file = do
+rawInitsFromFile ::
+  String -> String ->
+  (String -> String -> IO (PassResult ([String], [(String, Expr)]))) ->
+    IO (Stack, Heap, MemRef, MemRef)
+rawInitsFromFile dir file linearizer = do
   let heap1 = heapEmpty
   let dummyFile = "$primitives"
-  pass <- linearizeFileWithBaseWithPasses dir file
+  pass <- linearizer dir file
   case pass of
+    PassOkay ([], []) -> 
+      error $ "rawInitsFromFile: failed to initialize"
     PassOkay (files, fileExprPairs) -> do
       -- Append a dummy file to make environment a space to inject prims
       let files2 = dummyFile : files
@@ -123,18 +140,25 @@ rawInitsFromFileWithBase dir file = do
       case (fileEnvPairs, reverse fileEnvPairs) of
         ((_, primMem) : _, (_, globalMem) : _) ->
           return (stackPushList frames stackEmpty, heap2, globalMem, primMem)
-        _ -> error $ "rawInitsFromFileWithBase: initialization failed"
+        _ -> error $ "rawInitsFromFile: initialization failed"
     PassFail msgs ->
-        error $ "rawInitsFromFileWithBase: " ++ (show msgs)
+        error $ "rawInitsFromFile: " ++ (show msgs)
+
+rawInitsFromFileWithBase :: String -> String -> IO (Stack, Heap, MemRef, MemRef)
+rawInitsFromFileWithBase dir file = do
+  rawInitsFromFile dir file linearizeFileWithBaseWithPasses
 
 -- At first, treat the base ids as pure
 initPureIds :: [Ident]
 initPureIds = primIds
 
 -- Actual state initialization
-rawInitStateWithBase :: String -> String -> IO State
-rawInitStateWithBase dir file = do
-  (stack, heap, globalMem, primMem) <- rawInitsFromFileWithBase dir file
+rawInitState ::
+  String -> String ->
+  (String -> String -> IO (Stack, Heap, MemRef, MemRef)) ->
+    IO State
+rawInitState dir file initializer = do
+  (stack, heap, globalMem, primMem) <- initializer dir file
   let (primBinds, heap2) = injectPrimBinds primMem heap
   case heapEnvInsertList primBinds primMem heap2 of
     Just heap3 ->
@@ -145,7 +169,11 @@ rawInitStateWithBase dir file = do
         , stBaseEnvMem = primMem
         , stGlobalEnvMem = globalMem
         }
-    _ -> error $ "rawInitStateWithBase: somehow failed here"
+    _ -> error $ "rawInitState: somehow failed here"
+
+rawInitStateWithBase :: String -> String -> IO State
+rawInitStateWithBase dir file =
+  rawInitState dir file rawInitsFromFileWithBase
 
 ------
 -- Putting everything together
@@ -156,9 +184,18 @@ guessEntryInfo file =
   let suffix = last $ LS.splitOn "/" file in
     (prefix, suffix)
 
+loadFile :: String -> String -> IO State
+loadFile dir file = do
+  rawInitState dir file (\a b -> rawInitsFromFile a b linearizeFileWithPasses)
+
 loadFileWithBase :: String -> String -> IO State
 loadFileWithBase dir file = do
   rawInitStateWithBase dir file
+
+loadFileGuess :: String -> IO State
+loadFileGuess file = do
+  let (dir, tgt) = guessEntryInfo file
+  loadFile dir tgt
 
 loadFileGuessWithBase :: String -> IO State
 loadFileGuessWithBase file = do

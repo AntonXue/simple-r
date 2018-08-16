@@ -44,7 +44,7 @@ data SmtCompExpr =
   deriving (Eq, Show, Read)
 
 data SmtLogicExpr =
-    SmtNot SmtExpr SmtExpr
+    SmtNot SmtExpr
   | SmtAnd SmtExpr SmtExpr
   | SmtOr SmtExpr SmtExpr
   deriving (Eq, Show, Read)

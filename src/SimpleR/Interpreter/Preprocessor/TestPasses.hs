@@ -5,6 +5,7 @@ module SimpleR.Interpreter.Preprocessor.TestPasses
 import System.Directory
 import Data.Char
 import Data.List
+import Data.Maybe
 
 import SimpleR.Language
 import SimpleR.Interpreter.Natives
@@ -70,10 +71,11 @@ testPassesOnDir dir = do
                    filter (isSuffixOf ".R") files
 
   -- Load the Program(s)
-  allProgs <- mapM progFromFile $ map (canonRFile dir) onlyRFiles
-  let allPairs = zip onlyRFiles allProgs
+  allMbProgs <- mapM progFromFile $ map (canonRFile dir) onlyRFiles
+  let allPairs = zip onlyRFiles allMbProgs
   let numAllPairs = length allPairs
-  let parsedPairs = filter (\(_, Program es) -> es /= []) allPairs
+  let parsedPairs = map (\(f, mbP) -> (f, fromJust mbP)) $
+                        filter (\(_, mbProg) -> mbProg /= Nothing) allPairs
   let numParsedPairs = length parsedPairs
 
   -- Printing this makes IO force everything before to finish
@@ -103,28 +105,6 @@ testPassesOnDir dir = do
   _ <- mapM_ (\(i, c) -> putStrLn $ "  " ++ show (idName i, c)) idCountPairs
   -- _ <- mapM_ (putStrLn . show) fileIdsPairs
 
-{-
-  -- TEST: rm calls
-  putStrLn ""
-  putStrLn bar
-  let rmCallPairs = map (\(f, p) -> (f, testRmCallFails p)) parsedPairs
-  let numRmCallPairs = length $ filter snd rmCallPairs
-  putStrLn $ "tpod: [rm calls] " ++ show numRmCallPairs ++ "/"
-                                 ++ show numParsedPairs
-  _ <- mapM (\(f, _) -> putStrLn $ "  " ++ f) $ filter snd rmCallPairs
-
-  -- TEST: objects used
-  putStrLn ""
-  putStrLn bar
-  let objAttrPairs = map (\(f, p) -> (f, testObjAttrFails p)) parsedPairs
-  let numObjAttrPairs = length $ filter snd objAttrPairs
-  putStrLn $ "tpod: [obj attr] " ++ show numObjAttrPairs ++ "/"
-                                 ++ show numParsedPairs
-  _ <- mapM (\(f, _) -> putStrLn $ "  " ++ f) $ filter snd objAttrPairs
-
-
-  putStrLn "********************************************"
--}
   putStrLn bar
   return ()
 

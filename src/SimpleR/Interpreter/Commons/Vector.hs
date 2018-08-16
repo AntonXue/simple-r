@@ -14,10 +14,18 @@ module SimpleR.Interpreter.Commons.Vector
   , Vector (..)
   , idFromAtomString
   , vecFromConst
+  , vecInts
+  , vecDoubles
+  , vecComplexes
+  , vecStrings
+  , vecBools
   , vecLength
   , vecResize
+  , vecType
   , vecToType
+  , joinType
   , vecPairJoinType
+  , vecPairLengthen
   ) where
 
 import Data.Maybe
@@ -108,9 +116,9 @@ vecDoubles :: Vector -> Maybe [Atom Double]
 vecDoubles (DoubleVec xs) = Just xs
 vecDoubles _ = Nothing
 
-vecComplexs :: Vector -> Maybe [Atom Complex]
-vecComplexs (ComplexVec xs) = Just xs
-vecComplexs _ = Nothing
+vecComplexes :: Vector -> Maybe [Atom Complex]
+vecComplexes (ComplexVec xs) = Just xs
+vecComplexes _ = Nothing
 
 vecStrings :: Vector -> Maybe [Atom String]
 vecStrings (StringVec xs) = Just xs

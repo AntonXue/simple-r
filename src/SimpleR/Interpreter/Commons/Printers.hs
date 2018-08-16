@@ -1,5 +1,9 @@
 module SimpleR.Interpreter.Commons.Printers
-  ( ppState
+  ( injStr
+  , injBreak
+  , injNewline
+  , injStrRep
+  , ppState
   ) where
 
 import Data.List
@@ -12,6 +16,9 @@ import SimpleR.Interpreter.Commons.SupportUtils
 
 injStr :: String -> [String] -> String
 injStr str strs = intercalate str strs
+
+injBreak :: String -> [String] -> String
+injBreak str strs = injStr ("\n" ++ str ++ "\n") strs
 
 injStrRep :: String -> Int -> [String] -> String
 injStrRep str n strs = injStr (intercalate "" $ take n $ repeat str) strs
@@ -48,6 +55,11 @@ ppId id = case idPkg id of
 ppExpr :: Expr -> String
 ppExpr expr = show expr
 
+ppRedex :: Redex -> String
+ppRedex (ResultRed mem) = "ResultRed (" ++ ppMem mem ++ ")"
+ppRedex (EvalRed mem expr) =
+  "EvalRed @ " ++ ppMem mem ++ " (" ++ ppExpr expr ++ ")"
+
 ppEnv :: Env -> String
 ppEnv env =
   let header = ">> Env (Pred: " ++ (ppMem $ envPredMem env) in
@@ -80,9 +92,9 @@ ppHeapObj (PromiseObj mem thunk) =
     injNewline [header, expr]
 ppHeapObj (DataObj (VecVal vec) attrs) =
   let header = "VectorVal" in
-  let vec = show vec in
+  let v = show vec in
   let att = ppAttrs attrs in
-    injNewline [header, vec, att]
+    injNewline [header, v, att]
 ppHeapObj (DataObj (RefsVal mems) attrs) =
   let header = "RefsVal" in
   let ms = injIntoList $ map ppMem mems in
@@ -115,14 +127,14 @@ ppPures pures =
   let header = ">> Pures" in
   let ids = injIntoList $ map ppId $ S.toList $ puresSet pures in
     injNewline $ [header, ids]
-
 ppState :: State -> String
 ppState state =
   let header = "> State (G: " ++ (ppMem $ stGlobalEnvMem state) ++
                      ") (P: " ++ (ppMem $ stBaseEnvMem state) ++ ")" in
   let heap = ppHeap $ stHeap state in
   let stack = ppStack $ stStack state in
+  let redex = ppRedex $ stRedex state in
     injBreakRep "*" 50 $
-      [header, heap, stack]
+      [header, heap, stack, redex]
 
 
