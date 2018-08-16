@@ -24,10 +24,7 @@ runFile file = do
   state <- loadFileGuess $ file
   let acc = runN 100 state
   -- putStrLn $ ppHist ([], state)
-  putStrLn $ show acc
   -- putStrLn $ show $ length $ compAcc acc
-  putStrLn ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
-
   putStrLn $ ppRedAccum acc
 
 

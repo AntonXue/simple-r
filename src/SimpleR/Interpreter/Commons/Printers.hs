@@ -62,79 +62,81 @@ ppRedex (EvalRed mem expr) =
 
 ppEnv :: Env -> String
 ppEnv env =
-  let header = ">> Env (Pred: " ++ (ppMem $ envPredMem env) in
-  let map = ppMap $ envMap env in
-    injNewline [header, map]
+  let headerStr = ">> Env (Pred: " ++ (ppMem $ envPredMem env) in
+  let mapStr = ppMap $ envMap env in
+    injNewline [headerStr, mapStr]
 
 ppCont :: Cont -> String
 ppCont slot = show slot
 
 ppFrame :: Frame -> String
 ppFrame frame =
-  let header = ">>>>> Frame " ++ (ppMem $ frameEnvMem frame) in
-  let slot = ppCont $ frameCont frame in
-    injNewline [header, slot]
+  let headerStr = ">>>>> Frame " ++ (ppMem $ frameEnvMem frame) in
+  let slotStr = ppCont $ frameCont frame in
+    injNewline [headerStr, slotStr]
 
 ppStack :: Stack -> String
 ppStack stack =
-  let header = ">> Stack (Reverse dump)" in
+  let headerStr = ">> Stack (Reverse dump)" in
   -- let frames = map ppFrame $ stackList stack in
-  let frames = reverse $ map ppFrame $ stackList stack in
-    injBreakRep "-" 20 $ header : frames
+  let framesStr = reverse $ map ppFrame $ stackList stack in
+    injBreakRep "-" 20 $ headerStr : framesStr
 
 ppAttrs :: Attributes -> String
 ppAttrs attrs = show attrs
 
 ppHeapObj :: HeapObj -> String
 ppHeapObj (PromiseObj mem thunk) =
-  let header = "PromiseObj " ++ (ppMem mem) in
-  let expr = ppExpr thunk in
-    injNewline [header, expr]
+  let headerStr = "PromiseObj " ++ (ppMem mem) in
+  let exprStr = ppExpr thunk in
+    injNewline [headerStr, exprStr]
 ppHeapObj (DataObj (VecVal vec) attrs) =
-  let header = "VectorVal" in
-  let v = show vec in
-  let att = ppAttrs attrs in
-    injNewline [header, v, att]
+  let headerStr = "VectorVal" in
+  let vecStr = show vec in
+  let attrStr = ppAttrs attrs in
+    injNewline [headerStr, vecStr, attrStr]
 ppHeapObj (DataObj (RefsVal mems) attrs) =
-  let header = "RefsVal" in
-  let ms = injIntoList $ map ppMem mems in
-  let att = ppAttrs attrs in
-    injNewline $ [header, ms, att]
+  let headerStr = "RefsVal" in
+  let mapStr = injIntoList $ map ppMem mems in
+  let attrStr = ppAttrs attrs in
+    injNewline $ [headerStr, mapStr, attrStr]
 ppHeapObj (DataObj (FunVal mem params expr) attrs) =
-  let header = "FunVal" in
-  let m = ppMem mem in
+  let headerStr = "FunVal" in
+  let memStr = ppMem mem in
   let paramStr = show params in
   let exprStr = ppExpr expr in
-  let att = ppAttrs attrs in
-    injNewline $ [header, m, paramStr, exprStr, att]
+  let attrStr = ppAttrs attrs in
+    injNewline $ [headerStr, memStr, paramStr, exprStr, attrStr]
 ppHeapObj (DataObj (EnvVal env) attrs) =
-  let header = "EnvVal" in
-  let e = ppEnv env in
-  let att = ppAttrs attrs in
-    injNewline $ [header, e, att]
+  let headerStr = "EnvVal" in
+  let envStr = ppEnv env in
+  let attrStr = ppAttrs attrs in
+    injNewline $ [headerStr, envStr, attrStr]
 
 ppHeap :: Heap -> String
 ppHeap heap =
-  let header = ">> Heap (next: " ++ (ppMem $ heapNextMem heap) in
-  let entries = map (\(mem, hobj) ->
+  let headerStr = ">> Heap (next: " ++ (ppMem $ heapNextMem heap) in
+  let entriesStr = map (\(mem, hobj) ->
                   let memHeader = "Heap @ [" ++ ppMem mem ++ "]" in
                     injNewline [memHeader, ppHeapObj hobj]) $
                 M.toList $ heapMap heap in
-    injBreakRep "-" 20 $ header : entries
+    injBreakRep "-" 20 $ headerStr : entriesStr
 
 ppPures :: Pures -> String
 ppPures pures =
-  let header = ">> Pures" in
-  let ids = injIntoList $ map ppId $ S.toList $ puresSet pures in
-    injNewline $ [header, ids]
+  let headerStr = ">> Pures" in
+  let idsStr = injIntoList $ map ppId $ S.toList $ puresSet pures in
+    injNewline $ [headerStr, idsStr]
+
 ppState :: State -> String
 ppState state =
-  let header = "> State (G: " ++ (ppMem $ stGlobalEnvMem state) ++
-                     ") (P: " ++ (ppMem $ stBaseEnvMem state) ++ ")" in
-  let heap = ppHeap $ stHeap state in
-  let stack = ppStack $ stStack state in
-  let redex = ppRedex $ stRedex state in
+  let headerStr = "> State" in
+  let gMemStr = "G: (" ++ (ppMem $ stGlobalEnvMem state) ++ ")" in
+  let pMemStr = "P: (" ++ (ppMem $ stBaseEnvMem state) ++ ")" in
+  let heapStr = ppHeap $ stHeap state in
+  let stackStr = ppStack $ stStack state in
+  let redexStr = ppRedex $ stRedex state in
     injBreakRep "*" 50 $
-      [header, heap, stack, redex]
+      [headerStr, gMemStr, pMemStr, heapStr, stackStr, redexStr]
 
 
