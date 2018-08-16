@@ -22,10 +22,11 @@ runFile :: String -> IO ()
 runFile file = do
   -- state <- loadFileGuessWithBase $ file
   state <- loadFileGuess $ file
-  let acc = runN 100 state
+  let redAcc = runN 100 state
   -- putStrLn $ ppHist ([], state)
   -- putStrLn $ show $ length $ compAcc acc
-  putStrLn $ ppRedAccum acc
+  putStrLn $ ppRedAccum redAcc
+  putStrLn $ show $ getValuesRed redAcc
 
 
 parseFile :: String -> IO ()

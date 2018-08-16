@@ -4,6 +4,8 @@ module SimpleR.Interpreter.Stepper.Execution
   , initRedAccMk
   , runN
   , runNHist
+  , getValuesRunN
+  , getValuesRed
   , ppHist
   , ppRedResult
   , ppRedAccum
@@ -38,6 +40,13 @@ isStateDone state =
   case stRedex state of
     ResultRed _ -> stStack state == stackEmpty
     _ -> False
+
+getStateVal :: State -> Maybe Value
+getStateVal state
+  | isStateDone state
+  , ResultRed mem <- stRedex state
+  , Just (DataObj val _) <- heapLookup mem $ stHeap state = Just val
+  | otherwise = Nothing
 
 tryRedsOnState :: State -> RedResult
 tryRedsOnState state =
@@ -91,6 +100,15 @@ runN n state =
 runNHist :: Int -> State -> [RedAccum]
 runNHist n state = take n $ iterate runRedsOnRedAccum $ initRedAccMk state
 
+getValuesRunN :: Int -> State -> [Maybe Value]
+getValuesRunN n state = map (getStateVal . snd) $ compAcc $ runN n state
+
+getValuesRed :: RedAccum -> [Maybe Value]
+getValuesRed redAcc = map (getStateVal . snd) $ compAcc redAcc
+
+----
+-- A few printing functions
+
 ppHist :: ([Rule], State) -> String
 ppHist (rules, state) =
   -- ppState state
@@ -110,15 +128,12 @@ ppRedResult (MultMatches pairs) =
                       map (\s -> ppHist ([r], s)) ss) pairs)
 
 ppRedAccum :: RedAccum -> String
-ppRedAccum acc = concatMap ppHist $ compAcc acc
-
-
-  -- error $ show
-  -- "RedAccum\n" ++
-  -- ">> Completes\n" ++ (concatMap ppHist $ compAcc acc) ++ "\n"
-  -- ">> Completes\n" ++ (injBreak "---" $ map ppHist $ compAcc acc) ++ "\n" ++
-  -- ">> Incompletes\n" ++ (injBreak "---" $ map ppHist $ incompAcc acc) ++ "\n" ++
-  -- ">> Errors\n" ++ (injBreak "---" $ map ppHist $ errorAcc acc)
+ppRedAccum acc =
+  "RedAccum\n" ++
+  ">> Completes\n" ++ (concatMap ppHist $ compAcc acc) ++ "\n" ++
+  ">> Completes\n" ++ (injBreak "---" $ map ppHist $ compAcc acc) ++ "\n" ++
+  ">> Incompletes\n" ++ (injBreak "---" $ map ppHist $ incompAcc acc) ++ "\n" ++
+  ">> Errors\n" ++ (injBreak "---" $ map ppHist $ errorAcc acc)
 
 ppRedAccumHist :: [RedAccum] -> String
 ppRedAccumHist accs =
