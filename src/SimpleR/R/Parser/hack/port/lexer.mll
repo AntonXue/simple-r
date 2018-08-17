@@ -393,11 +393,11 @@ let hex_esc =
   '\\' hex+
 
 let uni_esc =
-    '\\' 'u' hex hex hex hex
-  | '\\' 'u' '{' hex hex hex hex '}'
+    '\\' 'u' hex_digit hex_digit hex_digit hex_digit
+  | '\\' 'u' '{' hex_digit hex_digit hex_digit hex_digit '}'
 
 let esc =
-    '\\' ['a' 'b' 't' 'n' 'f' 'r' 'v' '\\' '"' '\'' '`']
+    '\\' ['a' 'b' 't' 'n' 'f' 'r' 'v' 'x' '\\' '"' '\'' '`']
   | oct_esc
   | hex_esc
   | uni_esc
@@ -423,7 +423,7 @@ let nsident =
 
 (* Technically % [^ '\n']+ % *)
 let user_op =
-  '%' [^ '%' '\n'] '%'
+  '%' [^ '%' '\n']* '%'
 
 let newline =
     '\n'

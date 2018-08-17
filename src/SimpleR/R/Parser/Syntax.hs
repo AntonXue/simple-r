@@ -106,3 +106,7 @@ data RExpr =
 
 data RProgram = RProgram [RExpr] deriving (Eq, Show, Read)
 
+ppRProg :: RProgram -> String
+ppRProg (RProgram rexprs) =
+  "RProgram [\n" ++ concatMap (\e -> show e ++ ",\n") rexprs ++ "]"
+

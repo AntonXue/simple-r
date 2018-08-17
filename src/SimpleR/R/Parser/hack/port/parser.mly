@@ -76,6 +76,7 @@
 
 prog:
     END_OF_INPUT                { [] }
+  | expr_or_assign END_OF_INPUT { $1 :: [] }
   | NEWLINE prog                { $2 }
   | expr_or_assign NEWLINE prog { $1 :: $3 }
   | expr_or_assign SEMI prog    { $1 :: $3 }
@@ -171,6 +172,9 @@ expr:
   *)
   | FOR LPAREN SYMBOL IN expr RPAREN expr_or_assign
                               { A.For (({A.default_ident with name=$3}, $5), $7) }
+
+  | FOR LPAREN SYMBOL IN expr RPAREN USER_OP expr_or_assign
+                              { A.For (({A.default_ident with name=$3}, $5), $8) }
 
   (* Block *)
   | LBRACE exprlist RBRACE     { A.Block $2 }

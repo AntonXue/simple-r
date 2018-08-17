@@ -12,7 +12,7 @@
 #' 
 rmd2rscript <- function(infile){
   # read the file
-  flIn <- readLines(infile)
+  flIn <- readLines(infile, warn=FALSE)
   # identify the start of code blocks
   cdStrt <- which(grepl(flIn, pattern = "```{r*", perl = TRUE))
   # identify the end of code blocks
@@ -57,7 +57,7 @@ file <- args[[1]]
 if (substr(file, nchar(file) - 1, nchar(file)) == "md") {
   rmd2rscript(file)
 } else {
-  flIn <- readLines(file)
+  flIn <- readLines(file, warn=FALSE)
   flOut <- stdout()
   for(i in 1:length(flIn)) {
     cat(flIn[i], "\n", file = flOut, sep="\t")

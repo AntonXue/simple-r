@@ -68,7 +68,8 @@ testPassesOnDir dir = do
   -- Figure out which things to parse
   files <- getDirectoryContents dir
   let onlyRFiles = sortBy (\a b -> (map toUpper a) `compare` (map toUpper b)) $
-                   filter (isSuffixOf ".R") files
+                   filter (const True) files
+                   -- filter (isSuffixOf ".R") files
 
   -- Load the Program(s)
   allMbProgs <- mapM progFromFile $ map (canonRFile dir) onlyRFiles
