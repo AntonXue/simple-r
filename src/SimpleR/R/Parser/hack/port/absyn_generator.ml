@@ -1,49 +1,59 @@
 
-let parseFile filename =
-  (* print_string ("parseFile: opening " ^ filename ^ " ... "); *)
-  let channel = open_in filename in
-  let lexbuf = Lexing.from_channel channel in
-  let absyn =
-   try
-     Parser.prog (Lexer.tokenize (ref [])) lexbuf
-   with _ ->
-      let pos = lexbuf.Lexing.lex_curr_p in
-      begin
-        (* print_endline "Error!"; *)
-        print_string "port: syntax error detected at line ";
-        print_string (string_of_int pos.Lexing.pos_lnum);
-        print_string " column ";
-        print_string (string_of_int (pos.Lexing.pos_cnum -
-                                     pos.Lexing.pos_bol));
-        print_endline ".";
-        (* failwith "port: syntax error" *)
-        exit 0
-      end in
-      let _ = close_in channel in
-      (* print_endline ("Okay!"); *)
-      absyn;;
+open Char
+open List
+open String
 
-let dumpTokens : string -> unit =
-  fun filename ->
-    let channel = open_in filename in
-    let lexbuf = Lexing.from_channel channel in
-    let x = ref [] in 
-      while true do
-        let tok = Lexer.tokenize x lexbuf in
-          print_endline (Lexer.string_of_token tok);
-          flush stdout
-      done
-    
-let main () =
-  let args = Array.to_list Sys.argv in
-  let in_filename = match args with
+open Sys
+
+let rmd2r_script : unit -> string =
+  fun _ ->
+    (* getcwd () ^ "/src/SimpleR/R/Parser/hack/rmd2rscript.R" *)
+    "/home/celery/foo/harvard/simple-r/src/SimpleR/R/Parser/hack/rmd2rscript.R"
+
+let rmd_tmp : unit -> string =
+  fun _ ->
+    (* getcwd () ^ "/~rmd.tmp" *)
+    "/home/celery/foo/harvard/simple-r/~rmd.tmp"
+
+let read_R_file : string -> string =
+  fun r_file ->
+    let cmd_str = "Rscript " ^ rmd2r_script () ^ " " ^ r_file ^ " > " ^ rmd_tmp () in
+    let _ = command cmd_str in
+    let lines = ref [] in
+    let in_chan = open_in (rmd_tmp ()) in
+      try
+        while true; do lines := input_line in_chan :: !lines; done; "";
+      with End_of_file ->
+        let _ = close_in in_chan in
+          String.concat "\n" (rev !lines)
+
+let parse_R_file : string -> unit Rast.program =
+  fun r_file ->
+    let file_str = read_R_file r_file in
+    let lexbuf = Lexing.from_string file_str in
+    let absyn =
+      try
+        Parser.prog (Lexer.tokenize (ref [])) lexbuf
+      with _ ->
+        let pos = lexbuf.Lexing.lex_curr_p in
+        begin
+          failwith ("port: syntax error detected at line " ^
+                    string_of_int pos.Lexing.pos_lnum ^ " column " ^
+                    string_of_int (pos.Lexing.pos_cnum - pos.Lexing.pos_bol))
+        end in
+      absyn
+
+let main : unit -> unit =
+  fun _ ->
+    let args = Array.to_list Sys.argv in
+    let r_file = match args with
                   | [] -> failwith "port: exactly one filename expected"
                   | (_ :: arg :: _) -> arg
                   | _ -> failwith "port: exactly one filename expected" in
-  (* Parsing *)
-  (* let _ = dumpTokens in_filename in *)
-  let absyn = parseFile in_filename in
-    print_endline (Rast.string_of_program absyn);
-    ;;
-main ()
+    
+    let absyn = parse_R_file r_file in
+    let _ = print_endline (Rast.string_of_program absyn) in
+      ();;
+
+main ();
 

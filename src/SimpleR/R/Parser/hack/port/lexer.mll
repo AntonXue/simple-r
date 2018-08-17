@@ -356,6 +356,10 @@ let strip_string_quotes : string -> string =
   fun str -> String.sub str 1 (String.length str - 2)
 }
 
+(* For some reason I had trouble representing the single dot *)
+let anychar =
+  [^ '\n' ]
+
 let hex_digit =
   ['0'-'9' 'a'-'f' 'A'-'F']
 
@@ -434,7 +438,6 @@ let comment =
 let whitespace =
   [' ' '\t' '\x0c']
 
-
 (* For matching elses that occur after an if inside an if-context *)
 let nlelse = whitespace* "else"
 (* Any number of lines with no semantic meaning.
@@ -445,7 +448,6 @@ let ifelse = nothing nlelse
 
 (* Parsing *)
 rule tokenize context = parse
-
 
   (* Delimiters *)
   | "("         { step LPAREN context; LPAREN }
