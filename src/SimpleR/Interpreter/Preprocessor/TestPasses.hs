@@ -37,7 +37,7 @@ testIdUsed id prog =
 
 flaggedPrims :: [RPrim]
 flaggedPrims =
-  [RPrimObjAttr, RPrimForm, RPrimHelp, RPrimDim, RPrimSuperAssignArrow,
+  [RPrimObjAttr, RPrimForm, RPrimHelp, RPrimDim, RPrimSuperAssign,
    RPrimGetPackage, RPrimGetPackageInt,
    RPrimDim, RPrimDimAssign,
    RPrimDimNames, RPrimDimNamesAssign,

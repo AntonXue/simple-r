@@ -38,8 +38,6 @@ data RPrim =
   | RPrimDimNames
   | RPrimDimNamesAssign
 
-  | RPrimObjAttr
-
   | RPrimIsArray
   | RPrimIsFinite
   | RPrimIsInfinite
@@ -126,13 +124,20 @@ data RPrim =
 
   -- Extras that we add
   | RPrimNot
-  | RPrimAssignArrow
-  | RPrimSuperAssignArrow
+  | RPrimAssign
+  | RPrimSuperAssign
   | RPrimColon
   | RPrimForm
   | RPrimHelp
-  | RPrimVecProj
+
+  | RPrimVecInd
+  | RPrimVecIndAssign
   | RPrimVecSub
+  | RPrimVecSubAssign
+  | RPrimListName
+  | RPrimListNameAssign
+  | RPrimObjAttr
+  | RPrimObjAttrAssign
 
   | RPrimGetPackage
   | RPrimGetPackageInt
@@ -197,8 +202,12 @@ primAll =
   -- Vectors
   , ("c",           RPrimC,              [])
   , (":",           RPrimColon,          [])
-  , ("[[",  RPrimVecProj,         [])
+
+  , ("[[",  RPrimVecInd,         [])
+  , ("[[<-",  RPrimVecIndAssign,         [])
   , ("[",   RPrimVecSub,          [])
+  , ("[<-",   RPrimVecSubAssign,          [])
+
   , ("dim",         RPrimDim,            [])
   , ("dim<-",       RPrimDimAssign,       [])
   , ("dimnames",    RPrimDimNames,       [])
@@ -295,8 +304,8 @@ primAll =
   , ("Re",    RPrimReal,    [])
 
   -- Assignment
-  , ("<-",  RPrimAssignArrow,      [])
-  , ("<<-", RPrimSuperAssignArrow, [])
+  , ("<-",  RPrimAssign,      [])
+  , ("<<-", RPrimSuperAssign, [])
 
   -- Lookups
   , ("::",  RPrimGetPackage,      [])
@@ -304,6 +313,7 @@ primAll =
 
   -- Objects
   , ("@", RPrimObjAttr, [])
+  , ("@<-", RPrimObjAttrAssign, [])
 
   -- Weird things
   , ("~",   RPrimForm,            [])

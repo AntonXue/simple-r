@@ -383,6 +383,71 @@ rule_ResultDiscard state
              , stStack = stack2 }]
   | otherwise = []
 
+-- Need to change the 4 x 2 = 8 access get and setters to function calls
+rule_VecInd :: State -> [State]
+rule_VecInd state
+  | (EvalRed envMem (VecInd expr args)) <- stRedex state =
+      let fun = Var $ idFromRPrim RPrimVecInd in
+      let redExpr = LamApp fun $ (Arg expr) : args in
+        [state { stRedex = EvalRed envMem redExpr }]
+  | otherwise = []
+
+rule_VecIndAssign :: State -> [State]
+rule_VecIndAssign state
+  | (EvalRed envMem (VecIndAssign expr1 args expr2)) <- stRedex state =
+      let fun = Var $ idFromRPrim RPrimVecIndAssign in
+      let redExpr = LamApp fun $ (map Arg [expr1, expr2]) ++ args in
+        [state { stRedex = EvalRed envMem redExpr }]
+  | otherwise = []
+
+rule_VecSub :: State -> [State]
+rule_VecSub state
+  | (EvalRed envMem (VecSub expr args)) <- stRedex state =
+      let fun = Var $ idFromRPrim RPrimVecSub in
+      let redExpr = LamApp fun $ (Arg expr) : args in
+        [state { stRedex = EvalRed envMem redExpr }]
+  | otherwise = []
+
+rule_VecSubAssign :: State -> [State]
+rule_VecSubAssign state
+  | (EvalRed envMem (VecSubAssign expr1 args expr2)) <- stRedex state =
+      let fun = Var $ idFromRPrim RPrimVecSubAssign in
+      let redExpr = LamApp fun $ (map Arg [expr1, expr2]) ++ args in
+        [state { stRedex = EvalRed envMem redExpr }]
+  | otherwise = []
+
+rule_ListName :: State -> [State]
+rule_ListName state
+  | (EvalRed envMem (ListName expr1 expr2)) <- stRedex state =
+      let fun = Var $ idFromRPrim RPrimListName in
+      let redExpr = LamApp fun $ (map Arg [expr1, expr2]) in
+        [state { stRedex = EvalRed envMem redExpr }]
+  | otherwise = []
+
+rule_ListNameAssign :: State -> [State]
+rule_ListNameAssign state
+  | (EvalRed envMem (ListNameAssign expr1 expr2 expr3)) <- stRedex state =
+      let fun = Var $ idFromRPrim RPrimListNameAssign in
+      let redExpr = LamApp fun $ (map Arg [expr1, expr2, expr3]) in
+        [state { stRedex = EvalRed envMem redExpr }]
+  | otherwise = []
+
+rule_ObjAttr :: State -> [State]
+rule_ObjAttr state
+  | (EvalRed envMem (ObjAttr expr1 expr2)) <- stRedex state =
+      let fun = Var $ idFromRPrim RPrimObjAttr in
+      let redExpr = LamApp fun $ (map Arg [expr1, expr2]) in
+        [state { stRedex = EvalRed envMem redExpr }]
+  | otherwise = []
+
+rule_ObjAttrAssign :: State -> [State]
+rule_ObjAttrAssign state
+  | (EvalRed envMem (ObjAttrAssign expr1 expr2 expr3)) <- stRedex state =
+      let fun = Var $ idFromRPrim RPrimObjAttrAssign in
+      let redExpr = LamApp fun $ (map Arg [expr1, expr2, expr3]) in
+        [state { stRedex = EvalRed envMem redExpr }]
+  | otherwise = []
+
 rule_Blank :: State -> [State]
 rule_Blank _ = []
 
@@ -417,6 +482,16 @@ data Rule =
   | RuleReturnStop
   | RuleReturnGo
   | RuleResultDiscard
+  
+  | RuleVecInd
+  | RuleVecIndAssign
+  | RuleVecSub
+  | RuleVecSubAssign
+  | RuleListName
+  | RuleListNameAssign
+  | RuleObjAttr
+  | RuleObjAttrAssign
+
   | RuleBlank
   deriving (Ord, Eq, Show, Read)
 
@@ -452,5 +527,15 @@ rulePairs =
   , (RuleReturnStop, rule_ReturnStop)
   , (RuleReturnGo, rule_ReturnGo)
   , (RuleResultDiscard, rule_ResultDiscard)
+
+  , (RuleVecInd, rule_VecInd)
+  , (RuleVecIndAssign, rule_VecIndAssign)
+  , (RuleVecSub, rule_VecSub)
+  , (RuleVecSubAssign, rule_VecSubAssign)
+  , (RuleListName, rule_ListName)
+  , (RuleListNameAssign, rule_ListNameAssign)
+  , (RuleObjAttr, rule_ObjAttr)
+  , (RuleObjAttrAssign, rule_ObjAttrAssign)
+
   , (RuleBlank, rule_Blank) ]
  

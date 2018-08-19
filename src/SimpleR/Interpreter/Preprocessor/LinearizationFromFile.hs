@@ -97,8 +97,8 @@ instance Convertable RBinOp RPrim where
   convert ROr int = (RPrimOr, int)
   convert ROrVec int = (RPrimOr, int) --
   -- Assignment arrows should have been caught already
-  -- convert RAssignArrow int = (RPrimAssignArrow, int)
-  -- convert RSuperAssignArrow int = (RPrimSuperAssignArrow, int)
+  -- convert RAssignArrow int = (RPrimAssign, int)
+  -- convert RSuperAssignArrow int = (RPrimSuperAssign, int)
   convert RRange int = (RPrimColon, int)
   convert RForm int = (RPrimForm, int)
   convert RHelp int = (RPrimHelp, int)
@@ -236,7 +236,7 @@ instance Convertable RExpr Expr where
         , Assign (Var highId) (lamAppPrim RPrimLength [Arg $ Var vecId])
         , While (lamAppPrim RPrimLe [Arg $ Var iterId, Arg $ Var highId])
             (Seq [ Assign (Var elemId)
-                          (lamAppPrim RPrimVecProj
+                          (lamAppPrim RPrimVecInd
                                       [Arg $ Var vecId, Arg $ Var iterId])
                  , exprb
                  , Assign (Var iterId)
