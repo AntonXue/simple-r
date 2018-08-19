@@ -60,6 +60,13 @@ testFlaggedIdsUsed :: Program -> [Ident]
 testFlaggedIdsUsed prog =
   filter ((flip testIdUsed) prog) flaggedIds
 
+flaggedStrings :: [String]
+flaggedStrings = ["ObjAttr ", "ObjAttrAssign ",
+                  "VecInd ", "VecIndAssign ",
+                  "VecSub ", "VecSubAssign ",
+                  "ListName ", "ListNameAssign "
+                  ]
+
 bar :: String
 bar = "********************************************************************"
 
@@ -82,33 +89,58 @@ testPassesOnDir dir = do
   -- Printing this makes IO force everything before to finish
   putStrLn ""
   putStrLn bar
-  putStrLn $ "tpod: " ++ show numParsedPairs ++ "/" ++ show numAllPairs
+  putStrLn "PARSING TEST"
+  putStrLn "files:"
+  _ <- mapM (\(f, _) -> putStrLn $ "  " ++ f) parsedPairs
+  putStrLn $ "total: " ++ show numParsedPairs ++ "/" ++ show numAllPairs
+
+  -- Test: flagged strings
+  putStrLn ""
+  putStrLn bar
+  putStrLn "STRING EXISTENCE TEST"
+
+  let strFilesPairs =
+        map (\s ->
+              (s, concatMap
+                    (\(f, p) -> if s `isInfixOf` (show p) then [f] else [])
+                    parsedPairs))
+            flaggedStrings
+
+  _ <- mapM (\(s, fs) -> do
+              putStrLn ""
+              putStrLn $ "  " ++ s
+              _ <- mapM (\f -> putStrLn $ "    " ++ f) fs
+              putStrLn "--")
+            strFilesPairs
+
+  putStrLn $ "flagged string counts:"
+  _ <- mapM (\(s, fs) -> do
+              putStrLn $ "  " ++ s ++ ": " ++ (show $ length fs))
+            strFilesPairs
 
   -- TEST: pure args
-  putStrLn ""
-  putStrLn bar
-  let pureArgsPairs = map (\(f, p) -> (f, testPureArgCallFails p)) parsedPairs
-  let numPureArgsPairs = length $ filter snd pureArgsPairs
-  putStrLn $ "tpod: [pure args] " ++ show numPureArgsPairs ++ "/"
-                                  ++ show numParsedPairs
-  _ <- mapM (\(f, _) -> putStrLn $ "  " ++ f) $ filter snd pureArgsPairs
+  -- putStrLn ""
+  -- putStrLn bar
+  -- let pureArgsPairs = map (\(f, p) -> (f, testPureArgCallFails p)) parsedPairs
+  -- let numPureArgsPairs = length $ filter snd pureArgsPairs
+  -- putStrLn $ "tpod: [pure args] " ++ show numPureArgsPairs ++ "/"
+  --                                 ++ show numParsedPairs
+  -- _ <- mapM (\(f, _) -> putStrLn $ "  " ++ f) $ filter snd pureArgsPairs
 
   -- Test the flagged ids used
-  putStrLn ""
-  putStrLn bar
-  let fileIdsPairs = map (\(f, p) -> (f, testFlaggedIdsUsed p)) parsedPairs
-  let fileIdPairsFlat = concat [map ((,) f) ids | (f, ids) <- fileIdsPairs]
-  -- idCountPairs :: [(Ident, Int)]
-  -- let idCountPairs = map (\i -> (sum $ length $ filter ((== i) . snd) fileIdPairsFlat)) flaggedIds
-  let idCountPairs = map (\i -> (i, length $ filter ((== i) . snd) fileIdPairsFlat)) flaggedIds
+  -- putStrLn ""
+  -- putStrLn bar
+  -- let fileIdsPairs = map (\(f, p) -> (f, testFlaggedIdsUsed p)) parsedPairs
+  -- let fileIdPairsFlat = concat [map ((,) f) ids | (f, ids) <- fileIdsPairs]
+  -- let idCountPairs = map (\i -> (i, length $ filter ((== i) . snd) fileIdPairsFlat)) flaggedIds
 
-  putStrLn $ "tpod: flagged id tests"
-  _ <- mapM_ (\(i, c) -> putStrLn $ "  " ++ show (idName i, c)) idCountPairs
-  _ <- mapM_ (\(f, ids) -> do
-                  putStrLn "--"
-                  putStrLn f
-                  putStrLn $ show $ map idName ids)
-              fileIdsPairs
+  -- putStrLn $ "tpod: flagged id tests"
+  -- _ <- mapM_ (\(i, c) -> putStrLn $ "  " ++ show (idName i, c)) idCountPairs
+  -- _ <- mapM_ (\(f, ids) -> do
+  --                 putStrLn "--"
+  --                 putStrLn f
+  --                 putStrLn $ show $ map idName ids)
+  --             fileIdsPairs
 
   putStrLn bar
   return ()
