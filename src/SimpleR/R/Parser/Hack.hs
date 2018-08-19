@@ -47,7 +47,7 @@ parseRFile file = do
     (_, Just out_handle, _, _) -> do
       rawRawParse <- hGetContents out_handle
       -- let rawParse = uniReplace rawRawParse
-      let rawParse = replace "\\u" "^u" $ replace "\\u" "^u" rawRawParse
+      let rawParse = replace "\\u" "u" $ replace "\\u" "u" rawRawParse
       case (maybeRead rawParse) :: Maybe RProgram of
         Nothing -> do
           traceIO $ "parseRFile: " ++ file ++ " parse error"

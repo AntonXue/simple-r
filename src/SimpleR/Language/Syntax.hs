@@ -49,10 +49,21 @@ data Expr =
   | NativeLamApp Ident [Ident]
   | Return Expr
   | Assign Expr Expr
+
+  | VecInd Expr [Arg]
+  | VecIndAssign Expr [Arg] Expr
+  | VecSub Expr [Arg]
+  | VecSubAssign Expr [Arg] Expr
+  | ListName Expr Expr
+  | ListNameAssign Expr Expr Expr
+  | ObjAttr Expr Expr
+  | ObjAttrAssign Expr Expr Expr
+
   | If Expr Expr Expr
   | While Expr Expr
   | Break
   | Next
+
   | Error
   | Tix Tick Expr
    deriving (Eq, Show, Read)

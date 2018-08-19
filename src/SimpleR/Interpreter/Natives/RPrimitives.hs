@@ -126,8 +126,8 @@ data RPrim =
 
   -- Extras that we add
   | RPrimNot
-  | RPrimAssign
-  | RPrimSuperAssign
+  | RPrimAssignArrow
+  | RPrimSuperAssignArrow
   | RPrimColon
   | RPrimForm
   | RPrimHelp
@@ -295,8 +295,8 @@ primAll =
   , ("Re",    RPrimReal,    [])
 
   -- Assignment
-  , ("<-",  RPrimAssign,          [])
-  , ("<<-", RPrimSuperAssign,     [])
+  , ("<-",  RPrimAssignArrow,      [])
+  , ("<<-", RPrimSuperAssignArrow, [])
 
   -- Lookups
   , ("::",  RPrimGetPackage,      [])

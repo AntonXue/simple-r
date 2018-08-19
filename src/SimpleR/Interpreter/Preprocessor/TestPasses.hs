@@ -37,7 +37,7 @@ testIdUsed id prog =
 
 flaggedPrims :: [RPrim]
 flaggedPrims =
-  [RPrimObjAttr, RPrimForm, RPrimHelp, RPrimDim, RPrimSuperAssign,
+  [RPrimObjAttr, RPrimForm, RPrimHelp, RPrimDim, RPrimSuperAssignArrow,
    RPrimGetPackage, RPrimGetPackageInt,
    RPrimDim, RPrimDimAssign,
    RPrimDimNames, RPrimDimNamesAssign,
@@ -52,7 +52,7 @@ testPrimsUsed prog =
 
 flaggedIds :: [Ident]
 flaggedIds =
-  (map idFromString ["matrix"])
+  (map idFromString ["matrix", "class"])
   ++
   map idFromRPrim flaggedPrims
 
@@ -104,7 +104,11 @@ testPassesOnDir dir = do
 
   putStrLn $ "tpod: flagged id tests"
   _ <- mapM_ (\(i, c) -> putStrLn $ "  " ++ show (idName i, c)) idCountPairs
-  -- _ <- mapM_ (putStrLn . show) fileIdsPairs
+  _ <- mapM_ (\(f, ids) -> do
+                  putStrLn "--"
+                  putStrLn f
+                  putStrLn $ show $ map idName ids)
+              fileIdsPairs
 
   putStrLn bar
   return ()

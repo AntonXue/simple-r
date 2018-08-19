@@ -59,10 +59,10 @@ type binop =
   | Or
   | OrVec
   (* Assignment *)
-  | Assign
-  | SuperAssign
+  | AssignArrow
+  | SuperAssignArrow
   (* List access *)
-  | ObjAttr
+  | ObjAttrGet
   (* List ranges *)
   | Range
   (* What the hell is this *)
@@ -129,9 +129,18 @@ and 'a expr =
   | FunDef of ('a param) list * 'a expr
   (* Expression blocks *)
   | Block of 'a expr list            (* {} *)
-  (* List Operations *)
+
+  (* Assignment *)
+  (*
+    | Assign of 'a expr * 'a expr
+    | SuperAssign of 'a expr * 'a expr
+  *)
+
+  (* Access Operations *)
   | ListProj of 'a expr * ('a arg) list
   | ListSub of 'a expr * ('a arg) list
+  | ListName of 'a expr * 'a expr
+  | ObjAttr of 'a expr * 'a expr
   (* Control structures *)
   | If of 'a expr * 'a expr (* empty block is like {NA}?*)
   | IfElse of 'a expr * 'a expr * 'a expr
@@ -211,9 +220,9 @@ let string_of_binop : binop -> string =
     | Or            -> "ROr"
     | OrVec         -> "ROrVec"
     | Form          -> "RForm"
-    | Assign        -> "RAssign"
-    | SuperAssign   -> "RSuperAssign"
-    | ObjAttr       -> "RObjAttr"
+    | AssignArrow   -> "RAssignArrow"
+    | SuperAssignArrow -> "RSuperAssignArrow"
+    | ObjAttrGet    -> "RObjAttrGet"
     | Range         -> "RRange"
     | Help          -> "RHelp"
     | GetPackage    -> "RGetPackage"
@@ -251,11 +260,6 @@ let string_of_rconst =
 let rec string_of_expr : 'a expr -> string =
   function
     (* Values *)
-    (*
-    | NumericConst i -> "NumericConst " ^ (string_of_numeric i)
-    | StringConst s  -> "StringConst " ^ s
-    | BoolConst l    -> "BoolConst " ^ (string_of_bool l)
-    *)
     | Const c -> "RConst (" ^ string_of_rconst c ^ ")"
     | Ident i -> "RVar (" ^ string_of_ident i ^ ")"
     | Null           -> "RNull"
@@ -294,6 +298,15 @@ let rec string_of_expr : 'a expr -> string =
     | Repeat (e) -> "RRepeat (" ^ string_of_expr e ^ ")"
     | Next -> "RNext"
     | Break -> "RBreak"
+
+    (* Assignment *)
+    (*
+      | Assign (e1, e2) ->
+          "RAssign (" ^ string_of_expr e1 ^ ") (" ^ string_of_expr e2 ^ ")"
+      | SuperAssign (e1, e2) ->
+          "RSuperAssign (" ^ string_of_expr e1 ^ ") (" ^ string_of_expr e2 ^ ")"
+    *)
+
     (* List acessing *)
     | ListProj (e, args) ->
         "RVecProj (" ^
@@ -303,7 +316,10 @@ let rec string_of_expr : 'a expr -> string =
         "RVecSub (" ^
           string_of_expr e ^ ") [" ^
           (String.concat "," (List.map string_of_arg args)) ^ "]"
-
+    | ListName (e1, e2) ->
+        "RListName (" ^ string_of_expr e1 ^ ") (" ^ string_of_expr e2 ^ ")"
+    | ObjAttr (e1, e2) ->
+        "RObjAttr (" ^ string_of_expr e1 ^ ") (" ^ string_of_expr e2 ^ ")"
 
 and string_of_arg : 'a arg -> string =
   function

@@ -96,15 +96,16 @@ instance Convertable RBinOp RPrim where
   convert RAndVec int = (RPrimAnd, int) --
   convert ROr int = (RPrimOr, int)
   convert ROrVec int = (RPrimOr, int) --
-  convert RAssign int = (RPrimAssign, int)
-  convert RSuperAssign int = (RPrimSuperAssign, int)
+  -- Assignment arrows should have been caught already
+  -- convert RAssignArrow int = (RPrimAssignArrow, int)
+  -- convert RSuperAssignArrow int = (RPrimSuperAssignArrow, int)
   convert RRange int = (RPrimColon, int)
   convert RForm int = (RPrimForm, int)
   convert RHelp int = (RPrimHelp, int)
   -- convert RMatrixMult int
   -- convert ROuterProd int
   -- convert RKronProd int
-  convert RObjAttr int = (RPrimObjAttr, int)
+  convert RObjAttrGet int = (RPrimObjAttr, int)
   convert RGetPackage int = (RPrimGetPackage, int)
   convert RGetPackageInt int = (RPrimGetPackageInt, int)
   -- convert RMatch int
@@ -123,8 +124,33 @@ instance Convertable RExpr Expr where
     let (expr, int3) = convert rexpr int2 in
       (lamAppPrim prim [Arg expr], int3)
 
-  -- Assignment
-  convert (RBinOp RAssign rexpr1 rexpr2) int =
+  ------- Binary operations
+  -- Assignment, all four types ie: [, [[, $, @
+  convert (RBinOp RAssignArrow (RVecProj rexpr1 rargs) rexpr2) int =
+    let (expr1, int1) = convert rexpr1 int in
+    let (args, int2) = convertList rargs int1 in
+    let (expr2, int3) = convert rexpr2 int2 in
+      (VecIndAssign expr1 args expr2, int3)
+
+  convert (RBinOp RAssignArrow (RVecSub rexpr1 rargs) rexpr2) int =
+    let (expr1, int1) = convert rexpr1 int in
+    let (args, int2) = convertList rargs int1 in
+    let (expr2, int3) = convert rexpr2 int2 in
+      (VecSubAssign expr1 args expr2, int3)
+  
+  convert (RBinOp RAssignArrow (RListName rexpr1 rexpr2) rexpr3) int =
+    let (expr1, int1) = convert rexpr1 int in
+    let (expr2, int2) = convert rexpr2 int1 in
+    let (expr3, int3) = convert rexpr3 int2 in
+      (ListNameAssign expr1 expr2 expr3, int3)
+
+  convert (RBinOp RAssignArrow (RObjAttr rexpr1 rexpr2) rexpr3) int =
+    let (expr1, int1) = convert rexpr1 int in
+    let (expr2, int2) = convert rexpr2 int1 in
+    let (expr3, int3) = convert rexpr3 int2 in
+      (ObjAttrAssign expr1 expr2 expr3, int3)
+
+  convert (RBinOp RAssignArrow rexpr1 rexpr2) int =
     let (expr1, int2) = convert rexpr1 int in
     let (expr2, int3) = convert rexpr2 int2 in
       (Assign expr1 expr2, int3)
@@ -146,6 +172,9 @@ instance Convertable RExpr Expr where
     let (expr1, int3) = convert rexpr1 int2 in
     let (expr2, int4) = convert rexpr2 int3 in
       (lamAppPrim prim [Arg expr1, Arg expr2], int4)
+  -- End of binary operations
+  --------------------
+
   convert (RFunCall rfun rargs) int =
     let (expr, int2) = convert rfun int in
     let (args, int3) = convertList rargs int2 in
@@ -174,14 +203,25 @@ instance Convertable RExpr Expr where
       (While (Const $ BoolConst True) expr, int2)
   convert (RNext) int = (Next, int)
   convert (RBreak) int = (Break, int)
+
+  -- Special access (not assignment, which is done in binops because fuck)
   convert (RVecProj rexpr rargs) int =
     let (expr, int2) = convert rexpr int in
     let (args, int3) = convertList rargs int2 in
-      (lamAppPrim RPrimVecProj (Arg expr : args), int3)
+      (VecInd expr args, int3)
   convert (RVecSub rexpr rargs) int =
     let (expr, int2) = convert rexpr int in
     let (args, int3) = convertList rargs int2 in
-      (lamAppPrim RPrimVecSub (Arg expr : args), int3)
+      (VecSub expr args, int3)
+  convert (RListName rexpr1 rexpr2) int =
+    let (expr1, int2) = convert rexpr1 int in
+    let (expr2, int3) = convert rexpr2 int2 in
+      (ListName expr1 expr2, int3)
+  convert (RObjAttr rexpr1 rexpr2) int =
+    let (expr1, int2) = convert rexpr1 int in
+    let (expr2, int3) = convert rexpr2 int2 in
+      (ObjAttr expr1 expr2, int3)
+
   convert (RFor rid rexprc rexprb) int =
     let (vecId, int2) = idAnonSeeded "vec" int in
     let (iterId, int3) = idAnonSeeded "iter" int2 in

@@ -50,8 +50,8 @@ data RBinOp =
   | RGt | RGe | RLt | RLe | REq | RNeq
   | RAnd | RAndVec | ROr | ROrVec
   | RMatrixMult | ROuterProd | RKronProd
-  | RAssign | RSuperAssign
-  | RObjAttr
+  | RAssignArrow | RSuperAssignArrow
+  | RObjAttrGet
   | RRange
   | RForm
   | RGetPackage
@@ -93,8 +93,12 @@ data RExpr =
   | RFunCall RExpr [RArg]
   | RFunDef [RParam] RExpr
   | RSeq [RExpr]
+
   | RVecProj RExpr [RArg]
   | RVecSub RExpr [RArg]
+  | RListName RExpr RExpr
+  | RObjAttr RExpr RExpr
+
   | RIf RExpr RExpr
   | RIfElse RExpr RExpr RExpr
   | RFor RIdent RExpr RExpr

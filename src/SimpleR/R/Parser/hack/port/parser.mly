@@ -88,7 +88,7 @@ expr_or_assign:
   ;
 
 equal_assign:
-    expr EQ_ASSIGN expr_or_assign { A.Bop(A.Assign, $1, $3) }
+    expr EQ_ASSIGN expr_or_assign { A.Bop(A.AssignArrow, $1, $3) }
   ;
 
 expr:
@@ -143,10 +143,16 @@ expr:
   | expr MATCH expr         { A.Bop (A.Match, $1, $3) }
 
   (* Directional assignment *)
-  | expr LASSIGN expr       { A.Bop (A.Assign, $1, $3) }
-  | expr RASSIGN expr       { A.Bop (A.Assign, $3, $1) }
-  | expr LSUPER_ASSIGN expr { A.Bop (A.SuperAssign, $1, $3) }
-  | expr RSUPER_ASSIGN expr { A.Bop (A.SuperAssign, $3, $1) }
+  (*
+    | expr LASSIGN expr       { A.Assign ($1, $3) }
+    | expr RASSIGN expr       { A.Assign ($3, $1) }
+    | expr LSUPER_ASSIGN expr { A.SuperAssign ($1, $3) }
+    | expr RSUPER_ASSIGN expr { A.SuperAssign ($3, $1) }
+  *)
+  | expr LASSIGN expr       { A.Bop (A.AssignArrow, $1, $3) }
+  | expr RASSIGN expr       { A.Bop (A.AssignArrow, $3, $1) }
+  | expr LSUPER_ASSIGN expr { A.Bop (A.SuperAssignArrow, $1, $3) }
+  | expr RSUPER_ASSIGN expr { A.Bop (A.SuperAssignArrow, $3, $1) }
 
   (* Grouping *)
   | LPAREN expr_or_assign RPAREN { $2 }
@@ -179,11 +185,6 @@ expr:
   (* Block *)
   | LBRACE exprlist RBRACE     { A.Block $2 }
 
-  (* List access *)
-  | expr LBRAX sublist RBRACK RBRACK
-                               { A.ListProj ($1, $3) }
-  | expr LBRACK sublist RBRACK { A.ListSub ($1, $3) }
-
   (* Package lookup *)
   | SYMBOL NS_GET SYMBOL                 { A.Bop (A.GetPackage, (A.Ident {A.default_ident with name=$1}), (A.Ident {A.default_ident with name=$3})) }
   | SYMBOL NS_GET STRING_CONST           { A.Bop (A.GetPackage, (A.Ident {A.default_ident with name=$1}), A.Const (A.StrConst (A.RString $3))) }
@@ -194,11 +195,22 @@ expr:
   | STRING_CONST NS_GET_INT SYMBOL       { A.Bop (A.GetPackageInt, (A.Const (A.StrConst (A.RString $1))), (A.Ident {A.default_ident with name=$3}))}
   | STRING_CONST NS_GET_INT STRING_CONST { A.Bop (A.GetPackageInt, (A.Const (A.StrConst (A.RString $1))), (A.Const (A.StrConst (A.RString $3)))) }
 
+  (* List access *)
+  | expr LBRAX sublist RBRACK RBRACK { A.ListProj ($1, $3) }
+  | expr LBRACK sublist RBRACK       { A.ListSub ($1, $3) }
+
   (* Property access *)
-  | expr DOLLAR SYMBOL       { A.ListProj ($1, [A.ExprArg (A.Ident {A.default_ident with name=$3})]) }
-  | expr DOLLAR STRING_CONST { A.ListProj ($1, [A.ExprArg (A.Const (A.StrConst (A.RString $3)))]) } 
-  | expr AT SYMBOL           { A.Bop (A.ObjAttr, $1, (A.Ident {A.default_ident with name=$3})) } 
-  | expr AT STRING_CONST     { A.Bop (A.ObjAttr, $1, (A.Const (A.StrConst (A.RString $3)))) } 
+  | expr DOLLAR SYMBOL       { A.ListName ($1, A.Ident {A.default_ident with name = $3}) }
+  | expr DOLLAR STRING_CONST { A.ListName ($1, A.Const (A.StrConst (A.RString $3))) }
+  | expr AT SYMBOL           { A.ObjAttr ($1, A.Ident {A.default_ident with name = $3}) }
+  | expr AT STRING_CONST     { A.ObjAttr ($1, A.Const (A.StrConst (A.RString $3))) }
+
+  (* OLD STUFF
+    | expr DOLLAR SYMBOL       { A.ListProj ($1, [A.ExprArg (A.Ident {A.default_ident with name=$3})]) }
+    | expr DOLLAR STRING_CONST { A.ListProj ($1, [A.ExprArg (A.Const (A.StrConst (A.RString $3)))]) } 
+    | expr AT SYMBOL           { A.Bop (A.ObjAttrGet, $1, (A.Ident {A.default_ident with name=$3})) } 
+    | expr AT STRING_CONST     { A.Bop (A.ObjAttrGet, $1, (A.Const (A.StrConst (A.RString $3)))) } 
+  *)
 
   ;
 

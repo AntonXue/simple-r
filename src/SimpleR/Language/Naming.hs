@@ -39,6 +39,24 @@ instance Renameable Expr where
       If expr1 expr2 expr3 ->
         If (rename o n expr1) (rename o n expr2) (rename o n expr3)
       While expr1 expr2 -> While (rename o n expr1) (rename o n expr2)
+
+      VecInd expr args -> VecInd (rename o n expr) (map (rename o n) args)
+      VecIndAssign expr1 args expr2 ->
+        VecIndAssign (rename o n expr1) (map (rename o n) args)
+                     (rename o n expr2)
+      VecSub expr args -> VecSub (rename o n expr) (map (rename o n) args)
+      VecSubAssign expr1 args expr2 ->
+        VecSubAssign (rename o n expr1) (map (rename o n) args)
+                     (rename o n expr2)
+
+      ListName expr1 expr2 -> ListName (rename o n expr1) (rename o n expr2)
+      ListNameAssign expr1 expr2 expr3 ->
+        ListNameAssign (rename o n expr1) (rename o n expr2) (rename o n expr3)
+
+      ObjAttr expr1 expr2 -> ObjAttr (rename o n expr1) (rename o n expr2)
+      ObjAttrAssign expr1 expr2 expr3 ->
+        ObjAttrAssign (rename o n expr1) (rename o n expr2) (rename o n expr3)
+
       Break -> Break
       Next -> Next
       Error -> Error
