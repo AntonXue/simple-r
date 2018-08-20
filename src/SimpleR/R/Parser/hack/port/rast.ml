@@ -331,7 +331,7 @@ and string_of_arg : 'a arg -> string =
     | IdentAssignEmpty i  -> "RIdentAssignEmpty (" ^ string_of_ident i ^ ")"
     | StringAssign (s, e) -> "RStringAssign (RString \"" ^ s ^ "\") (" ^
                                 string_of_expr e ^ ")"
-    | StringAssignEmpty s -> "RStringAssign (RString \"" ^ s ^ "\")"
+    | StringAssignEmpty s -> "RStringAssignEmpty (RString \"" ^ s ^ "\")"
     | NullAssign e        -> "RNullAssign (" ^ string_of_expr e ^ ")"
     | NullAssignEmpty     -> "RNullAssignEmpty"
     | ArgDots             -> "RVarArg"
