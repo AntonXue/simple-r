@@ -72,6 +72,7 @@ type binop =
   | GetPackageInt
   (* Help?? *)
   | Help
+  | ColonAssign
 
 type rnumeric =
     NumInt of int
@@ -227,6 +228,7 @@ let string_of_binop : binop -> string =
     | Help          -> "RHelp"
     | GetPackage    -> "RGetPackage"
     | GetPackageInt -> "RGetPackageInt"
+    | ColonAssign   -> "RColonAssign"
 
 
 let string_of_rnumeric =

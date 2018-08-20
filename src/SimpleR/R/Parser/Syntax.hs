@@ -58,6 +58,8 @@ data RBinOp =
   | RGetPackageInt
   | RMatch
   | RHelp
+
+  | RColonAssign
   deriving (Eq, Show, Read)
 
 data RParam =

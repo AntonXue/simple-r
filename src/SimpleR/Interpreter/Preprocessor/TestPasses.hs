@@ -64,8 +64,20 @@ flaggedStrings :: [String]
 flaggedStrings = ["ObjAttr ", "ObjAttrAssign ",
                   "VecInd ", "VecIndAssign ",
                   "VecSub ", "VecSubAssign ",
-                  "ListName ", "ListNameAssign "
+                  "ListName ", "ListNameAssign ",
+                  "RPrimSuperAssign",
+                  "LamApp (Var (Ident {idName = \"class\"",
+                  "LamApp (Var (Ident {idName = \"new.env\"",
+                  "LamApp (Var (Ident {idName = \"rm\"",
+                  "LamApp (Var (Ident {idName = \"setClass\"",
+                  "LamApp (Var (Ident {idName = \"setRefClass\"",
+                  "LamApp (Var (Ident {idName = \"eval\"",
+                  "LamApp (Var (Ident {idName = \"library\"",
+                  "LamApp (Var (Ident {idName = \"list2env\""
                   ]
+
+dropFirstLast :: [a] -> [a]
+dropFirstLast xs = reverse $ drop 1 $ reverse $ drop 1 xs
 
 bar :: String
 bar = "********************************************************************"
@@ -75,7 +87,9 @@ testPassesOnDir dir = do
   -- Figure out which things to parse
   files <- getDirectoryContents dir
   let onlyRFiles = sortBy (\a b -> (map toUpper a) `compare` (map toUpper b)) $
-                   filter (const True) files
+                   filter (\f -> (not (".swp" `isSuffixOf` f)) &&
+                                 (not (f == ".")) &&
+                                 (not (f == ".."))) files
                    -- filter (isSuffixOf ".R") files
 
   -- Load the Program(s)
@@ -117,6 +131,22 @@ testPassesOnDir dir = do
   _ <- mapM (\(s, fs) -> do
               putStrLn $ "  " ++ s ++ ": " ++ (show $ length fs))
             strFilesPairs
+
+  putStrLn ""
+  putStrLn bar
+  putStrLn "RM OUT OF PLACE"
+
+  let badRmFiles =
+        concatMap (\(f, Program exprs) ->
+                      let exprs2 = dropFirstLast exprs in
+                        if "LamApp (Var (Ident {idName = \"rm\""
+                            `isInfixOf` (show exprs2) then [f] else [])
+                  parsedPairs
+  _ <- mapM (\f -> putStrLn $ "  " ++ f) badRmFiles
+  putStrLn ""
+  putStrLn $ "bad rm count: " ++ (show $ length badRmFiles)
+
+  
 
   -- TEST: pure args
   -- putStrLn ""

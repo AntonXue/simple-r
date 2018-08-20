@@ -84,6 +84,7 @@
         | FLOAT_CONST f -> "FLOAT_CONST (" ^ (string_of_float f) ^ ")"
         | FALSE -> "FALSE"
         | EQ_ASSIGN -> "EQ_ASSIGN"
+        | COLON_ASSIGN -> "COLON_ASSIGN"
         | EQ -> "EQ"
         | ELSE -> "ELSE"
         | DOLLAR -> "DOLLAR"
@@ -154,6 +155,7 @@
         | FLOAT_CONST _     -> false (* a value *)
         | FALSE             -> false (* a value *)
         | EQ_ASSIGN         -> true
+        | COLON_ASSIGN      -> true
         | EQ                -> true
         | END_OF_INPUT      -> false
         | ELSE              -> true (* expect expr *)
@@ -268,6 +270,7 @@
             | FUNCTION          -> true (* expect (args) expr *)
             | FOR               -> true (* expect (var in expr) expr *)
             | EQ_ASSIGN         -> true
+            | COLON_ASSIGN      -> true
             | EQ                -> true
             | ELSE              -> true (* expect expr *)
             | DOLLAR            -> true
@@ -502,7 +505,7 @@ rule tokenize context = parse
 
   (* Were not listed but likely relevant *)
   | ";"         { step SEMI context; SEMI }
-  | ":="        { step EQ_ASSIGN context; EQ_ASSIGN }
+  | ":="        { step COLON_ASSIGN context; COLON_ASSIGN }
   | "..."       { step (SYMBOL "") context; SYMBOL (Lexing.lexeme lexbuf) }
 
   (* Dumb Special Cases *)

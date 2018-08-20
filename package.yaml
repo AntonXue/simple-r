@@ -26,6 +26,7 @@ dependencies:
 - directory
 - split
 - MissingH
+- tasty
 
 library:
   source-dirs: src

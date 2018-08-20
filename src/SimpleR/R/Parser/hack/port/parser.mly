@@ -17,7 +17,7 @@
   %token         LOW
   %token         INCOMPLETE_STRING
 *)
-%token         LASSIGN EQ_ASSIGN RASSIGN
+%token         LASSIGN EQ_ASSIGN RASSIGN COLON_ASSIGN
 %token         FOR IN IF ELSE WHILE NEXT BREAK REPEAT
 %token         GT GE LT LE EQ NE AND OR AND2 OR2
 %token         NS_GET NS_GET_INT
@@ -154,6 +154,8 @@ expr:
   | expr LSUPER_ASSIGN expr { A.Bop (A.SuperAssignArrow, $1, $3) }
   | expr RSUPER_ASSIGN expr { A.Bop (A.SuperAssignArrow, $3, $1) }
 
+  (* Stupid colon thing *)
+
   (* Grouping *)
   | LPAREN expr_or_assign RPAREN { $2 }
 
@@ -230,6 +232,7 @@ exprlist:
 sublist :
   | sub               { $1 }
   | sublist COMMA sub { $1 @ $3 }
+  | COMMA sublist     { [A.ExprArg A.Null] @ $2 }
   ;
 
 sub :                           { [] } 
@@ -240,6 +243,8 @@ sub :                           { [] }
   | STRING_CONST EQ_ASSIGN expr { [A.StringAssign ($1, $3)] }
   | NULL EQ_ASSIGN              { [A.NullAssignEmpty] }
   | NULL EQ_ASSIGN expr         { [A.NullAssign $3] }
+  | expr COLON_ASSIGN expr   { [A.ExprArg (A.Bop (A.ColonAssign, $1, $3))] }
+  | expr COLON_ASSIGN NULL { [A.ExprArg (A.Bop (A.ColonAssign, $1, A.Null))] }
   ;
 
 formlist:
