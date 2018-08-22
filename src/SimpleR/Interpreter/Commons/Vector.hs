@@ -75,7 +75,7 @@ data Vector =
   | ComplexVec [Atom Complex]
   | BoolVec [Atom Bool]
   | StringVec [Atom String]
-  | SymVec SmtIdent Type
+  | SymVec SmtIdent Type Int
   | NilVec
   deriving (Eq, Show, Read)
 
@@ -97,7 +97,7 @@ vecLength (DoubleVec xs) = length xs
 vecLength (ComplexVec xs) = length xs
 vecLength (BoolVec xs) = length xs
 vecLength (StringVec xs) = length xs
-vecLength (SymVec _ _ ) = error $ "vecLength: called with SymVec"
+vecLength (SymVec _ _ len) = len -- error $ "vecLength: called with SymVec"
 
 vecType :: Vector -> Type
 vecType (IntVec _) = IntTy
@@ -105,7 +105,7 @@ vecType (DoubleVec _) = DoubleTy
 vecType (ComplexVec _) = ComplexTy
 vecType (BoolVec _) = BoolTy
 vecType (StringVec _) = StringTy
-vecType (SymVec _ ty) = ty
+vecType (SymVec _ ty _) = ty
 vecType (NilVec) = NullTy
 
 vecInts :: Vector -> Maybe [Atom Int]
@@ -145,8 +145,10 @@ vecResize _ (DoubleVec []) = error $ "vecLength: DoubleVec has length 0"
 vecResize _ (ComplexVec []) = error $ "vecLength: ComplexVec has length 0"
 vecResize _ (StringVec []) = error $ "vecLength: StringVec has length 0"
 vecResize _ (BoolVec []) = error $ "vecLength: BoolVec has length 0"
-vecResize _ (SymVec _ _) = error $ "vecLength: called with SymVec"
 vecResize _ (NilVec) = error $ "vecLength: called with NilVec"
+vecResize n (SymVec id ty len) =
+  SymVec id ty n
+  -- error $ "vecLength: called with SymVec"
 
 -----
 -- Conversion
@@ -275,7 +277,7 @@ vecToType (BoolVec xs) ComplexTy =
 vecToType (BoolVec xs) StringTy = StringVec $ (map . fmap) stringFromBool xs
 vecToType (BoolVec xs) BoolTy = BoolVec $ (map . fmap) boolFromBool xs
 
-vecToType (SymVec sym _) ty = SymVec sym ty
+vecToType (SymVec sym _ len) ty = SymVec sym ty len
 vecToType (NilVec) _ = NilVec
 
 -- Type lattice

@@ -27,6 +27,7 @@ dependencies:
 - split
 - MissingH
 - tasty
+- tasty-hunit
 
 library:
   source-dirs: src

@@ -22,7 +22,7 @@ main = do
 runFile :: String -> IO ()
 runFile file = do
   -- state <- loadFileGuessWithBase $ file
-  state <- loadFileGuess $ file
+  state <- loadUserGuessWithDefaultBase $ file
   let redAcc = runN 100 state
   -- putStrLn $ ppHist ([], state)
   -- putStrLn $ show $ length $ compAcc acc
@@ -36,10 +36,7 @@ parseFile dir = do
   putStrLn "parseFile: done!"
 
 testStr :: String
-testStr =
-  "RBinOp (RAssignArrow) (RVar (RIdent {ridPkg = Nothing, ridName = \"S\", ridSrc = Nothing, ridAnnot = Nothing})) (RFunCall (RVar (RIdent {ridPkg = Nothing, ridName = \"switch\", ridSrc = Nothing, ridAnnot = Nothing})) [RExprArg (RVar (RIdent {ridPkg = Nothing, ridName = \"design\", ridSrc = Nothing, ridAnnot = Nothing})),RStringAssign (RString \"2\") (RConst (RNumConst (RNumInt 5))),RStringAssign (RString \"6\"),RStringAssign (RString \"7\"),RStringAssign (RString \"8\"),RStringAssign (RString \"9\"),RStringAssign (RString \"10\") (RConst (RNumConst (RNumInt 50))),RExprArg (RConst (RNumConst (RNumInt 10)))])"
-
-
+testStr = ""
 
 
 parseTest :: IO ()

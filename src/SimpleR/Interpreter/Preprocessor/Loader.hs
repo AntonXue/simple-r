@@ -1,12 +1,16 @@
 module SimpleR.Interpreter.Preprocessor.Loader
   (
-    linearizeBaseWithPasses
-  , linearizeFileWithPasses
-  , linearizeFileWithBaseWithPasses
-  , loadFile
-  , loadFileWithBase
-  , loadFileGuess
-  , loadFileGuessWithBase
+    linearizeCustomBaseWithPasses
+  , linearizeDefaultBaseWithPasses
+  , linearizeUserWithPasses
+  , linearizeUserWithCustomBaseWithPasses
+  , linearizeUserWithDefaultBaseWithPasses
+  , loadUserWithNoBase
+  , loadUserWithCustomBase
+  , loadUserWithDefaultBase
+  , loadUserGuessWithNoBase
+  , loadUserGuessWithCustomBase
+  , loadUserGuessWithDefaultBase
   ) where
 
 import qualified Data.List as L
@@ -34,22 +38,30 @@ import SimpleR.Interpreter.Preprocessor.Passes
 
 -----
 -- Parsing the R file + passes
-linearizeBaseWithPasses :: IO (PassResult ([String], [(String, Expr)]))
-linearizeBaseWithPasses = do
-  mbLinear <- linearizeBase
-  case mbLinear of 
+linearizeCustomBaseWithPasses ::
+  String -> String -> IO (PassResult ([String], [(String, Expr)]))
+linearizeCustomBaseWithPasses baseDir baseFile = do
+  mbLinearBase <- linearizeCustomBase baseDir baseFile
+  case mbLinearBase of
     Just (files, pairs) ->
       case runBasePasses pairs of
-        PassOkay okays -> return (PassOkay (files, okays))
-        PassFail msgs -> return (PassFail msgs)
+        PassOkay okays -> return $ PassOkay (files, okays)
+        PassFail msgs -> return $ PassFail msgs
     _ ->
-      return $ PassFail ["linearizeBaseWithPasses: failed to linearize"]
+      return $ PassFail ["linearizeCustomBaseWithPasses: failed at " ++
+                            baseDir ++ "/" ++ baseFile]
 
-linearizeFileWithPasses ::
+linearizeDefaultBaseWithPasses :: IO (PassResult ([String], [(String, Expr)]))
+linearizeDefaultBaseWithPasses = do
+  baseDir <- defaultBaseDir
+  baseFile <- defaultBaseFile
+  linearizeCustomBaseWithPasses baseDir baseFile
+
+linearizeUserWithPasses ::
   String -> String -> IO (PassResult ([String], [(String, Expr)]))
-linearizeFileWithPasses dir file = do
-  mbLinear <- linearizeFile dir file
-  case mbLinear of
+linearizeUserWithPasses dir file = do
+  mbLinearUser <- linearizeUser dir file
+  case mbLinearUser of
     Just (files, pairs) ->
       case runUserPasses pairs of
         PassOkay okays -> return (PassOkay (files, okays))
@@ -57,19 +69,29 @@ linearizeFileWithPasses dir file = do
     _ ->
       return $ PassFail ["linearizeFileWithPasses: filed to linearize"]
 
-linearizeFileWithBaseWithPasses ::
-  String -> String -> IO (PassResult ([String], [(String, Expr)]))
-linearizeFileWithBaseWithPasses dir file = do
-  basePass <- linearizeBaseWithPasses
-  filePass <- linearizeFileWithPasses dir file
-  case (basePass, filePass) of
-    (PassOkay baseLinear, PassOkay fileLinear) ->
-      return $ PassOkay $ joinLinearizations baseLinear fileLinear
-    _ ->
-      return $
-        PassFail ["linearizeFileWithBasesWithPasses: failed to linearize"]
+linearizeUserWithCustomBaseWithPasses ::
+  String -> String ->
+  String -> String ->
+    IO (PassResult ([String], [(String, Expr)]))
+linearizeUserWithCustomBaseWithPasses baseDir baseFile userDir userFile = do
+  basePass <- linearizeCustomBaseWithPasses baseDir baseFile
+  userPass <- linearizeUserWithPasses userDir userFile
+  case (basePass, userPass) of
+    (PassOkay baseLinear, PassOkay userLinear) ->
+      return $ PassOkay $ joinLinearizations baseLinear userLinear
+    _ -> return $
+          PassFail ["linearizeUserWithCustomBase: failed at " ++
+                      baseDir ++ "/" ++ baseFile ++ " " ++
+                      userDir ++ "/" ++ userFile ]
 
------------------
+linearizeUserWithDefaultBaseWithPasses ::
+  String -> String -> IO (PassResult ([String], [(String, Expr)]))
+linearizeUserWithDefaultBaseWithPasses userDir userFile = do
+  baseDir <- defaultBaseDir
+  baseFile <- defaultBaseFile
+  linearizeUserWithCustomBaseWithPasses baseDir baseFile userDir userFile
+
+--------------------------------------------------------------------
 -- State initialization
 
 -- Allocate a list of environments that correspond to each file,
@@ -119,14 +141,17 @@ injectPrimBinds primEnvMem heap =
 envMemOffsetMem :: MemRef
 envMemOffsetMem = memFromInt 2
 
-rawInitsFromFile ::
+
+-----------
+-- Raw initializaiton tuples
+rawInitsFromUser ::
   String -> String ->
   (String -> String -> IO (PassResult ([String], [(String, Expr)]))) ->
     IO (Stack, Heap, MemRef, MemRef)
-rawInitsFromFile dir file linearizer = do
+rawInitsFromUser userDir userFile userLinearizer = do
   let heap1 = heapEmpty
   let dummyFile = "$primitives"
-  pass <- linearizer dir file
+  pass <- userLinearizer userDir userFile
   case pass of
     PassOkay ([], []) -> 
       error $ "rawInitsFromFile: failed to initialize"
@@ -144,9 +169,24 @@ rawInitsFromFile dir file linearizer = do
     PassFail msgs ->
         error $ "rawInitsFromFile: " ++ (show msgs)
 
-rawInitsFromFileWithBase :: String -> String -> IO (Stack, Heap, MemRef, MemRef)
-rawInitsFromFileWithBase dir file = do
-  rawInitsFromFile dir file linearizeFileWithBaseWithPasses
+rawInitsFromUserWithNoBase ::
+  String -> String -> IO (Stack, Heap, MemRef, MemRef)
+rawInitsFromUserWithNoBase userDir userFile = do
+  rawInitsFromUser userDir userFile linearizeUserWithPasses
+
+rawInitsFromUserWithDefaultBase ::
+  String -> String -> IO (Stack, Heap, MemRef, MemRef)
+rawInitsFromUserWithDefaultBase userDir userFile = do
+  rawInitsFromUser userDir userFile linearizeUserWithDefaultBaseWithPasses
+
+rawInitsFromUserWithCustomBase ::
+  String -> String ->
+  String -> String ->
+    IO (Stack, Heap, MemRef, MemRef)
+rawInitsFromUserWithCustomBase baseDir baseFile userDir userFile =
+  rawInitsFromUser userDir userFile
+    (linearizeUserWithCustomBaseWithPasses baseDir baseFile)
+
 
 -- At first, treat the base ids as pure
 initPureIds :: [Ident]
@@ -157,8 +197,8 @@ rawInitState ::
   String -> String ->
   (String -> String -> IO (Stack, Heap, MemRef, MemRef)) ->
     IO State
-rawInitState dir file initializer = do
-  (stack, heap, globalMem, primMem) <- initializer dir file
+rawInitState userDir userFile initializer = do
+  (stack, heap, globalMem, primMem) <- initializer userDir userFile
   let (primBinds, heap2) = injectPrimBinds primMem heap
   case heapEnvInsertList primBinds primMem heap2 of
     Just heap3 ->
@@ -171,37 +211,58 @@ rawInitState dir file initializer = do
         }
     _ -> error $ "rawInitState: somehow failed here"
 
-rawInitStateWithBase :: String -> String -> IO State
-rawInitStateWithBase dir file =
-  rawInitState dir file rawInitsFromFileWithBase
+rawInitStateNoBase :: String -> String -> IO State
+rawInitStateNoBase userDir userFile =
+  rawInitState userDir userFile rawInitsFromUserWithNoBase
+  
+
+rawInitStateWithCustomBase :: String -> String -> String -> String -> IO State
+rawInitStateWithCustomBase baseDir baseFile userDir userFile =
+  rawInitState userDir userFile
+    (rawInitsFromUserWithCustomBase baseDir baseFile)
+
+rawInitStateWithDefaultBase :: String -> String -> IO State
+rawInitStateWithDefaultBase userDir userFile =
+  rawInitState userDir userFile rawInitsFromUserWithDefaultBase
 
 ------
 -- Putting everything together
 
 guessEntryInfo :: String -> (String, String)
-guessEntryInfo file =
-  let prefix = L.intercalate "/" $ init $ LS.splitOn "/" file in
-  let suffix = last $ LS.splitOn "/" file in
+guessEntryInfo userFile =
+  let prefix = L.intercalate "/" $ init $ LS.splitOn "/" userFile in
+  let suffix = last $ LS.splitOn "/" userFile in
     (prefix, suffix)
 
-loadFile :: String -> String -> IO State
-loadFile dir file = do
-  rawInitState dir file (\a b -> rawInitsFromFile a b linearizeFileWithPasses)
+loadUserWithNoBase :: String -> String -> IO State
+loadUserWithNoBase userDir userFile =
+  rawInitState userDir userFile
+    (\a b -> rawInitsFromUser a b linearizeUserWithPasses)
 
-loadFileWithBase :: String -> String -> IO State
-loadFileWithBase dir file = do
-  rawInitStateWithBase dir file
+loadUserWithCustomBase ::
+  String -> String -> String -> String -> IO State
+loadUserWithCustomBase baseDir baseFile userDir userFile =
+  rawInitStateWithCustomBase baseDir baseFile userDir userFile
 
-loadFileGuess :: String -> IO State
-loadFileGuess file = do
-  let (dir, tgt) = guessEntryInfo file
-  loadFile dir tgt
+loadUserWithDefaultBase ::
+  String -> String -> IO State
+loadUserWithDefaultBase userDir userFile =
+  rawInitStateWithDefaultBase userDir userFile
 
-loadFileGuessWithBase :: String -> IO State
-loadFileGuessWithBase file = do
-  let (dir, tgt) = guessEntryInfo file
-  loadFileWithBase dir tgt
+loadUserGuessWithNoBase :: String -> IO State
+loadUserGuessWithNoBase guessFile = do
+  let (userDir, userFile) = guessEntryInfo guessFile
+  loadUserWithNoBase userDir userFile
 
+loadUserGuessWithCustomBase :: String -> String -> String -> IO State
+loadUserGuessWithCustomBase baseDir baseFile guessFile = do
+  let (userDir, userFile) = guessEntryInfo guessFile
+  loadUserWithCustomBase baseDir baseFile userDir userFile
+
+loadUserGuessWithDefaultBase :: String -> IO State
+loadUserGuessWithDefaultBase guessFile = do
+  let (userDir, userFile) = guessEntryInfo guessFile
+  loadUserWithDefaultBase userDir userFile
 
 
 

@@ -1,13 +1,15 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 module SimpleR.Interpreter.Preprocessor.LinearizationFromFile
-  ( baseDir
-  , baseFile
+  ( defaultBaseDir
+  , defaultBaseFile
   , canonRFile
   , progFromFile
-  , linearizeBase
-  , linearizeFile
+  , linearizeCustomBase
+  , linearizeDefaultBase
+  , linearizeUser
   , joinLinearizations
-  , linearizeFileWithBase
+  , linearizeUserWithCustomBase
+  , linearizeUserWithDefaultBase
   ) where
 
 import System.Directory
@@ -262,13 +264,13 @@ instance Convertable RProgram Program where
       (Program exprs, int2)
 
 -- Load the program
-baseDir :: IO String
-baseDir = do
+defaultBaseDir :: IO String
+defaultBaseDir = do
   curr <- getCurrentDirectory
   return $ curr ++ "/base/R"
 
-baseFile :: IO String
-baseFile = return $ "custom.R"
+defaultBaseFile :: IO String
+defaultBaseFile = return $ "custom.R"
 
 canonRFile :: String -> String -> String
 canonRFile dir file =
@@ -316,15 +318,8 @@ execTreeFromFile dir file = do
     _ -> trace ("execTreeFromFile: failed to load exectree: " ++ canonFile) $
                 return Nothing
 
-baseExecTree :: IO (Maybe ExecTree)
-baseExecTree = do
-  base <- baseDir
-  file <- baseFile
-  execTreeFromFile base file 
-
-fileExecTree :: String -> String -> IO (Maybe ExecTree)
-fileExecTree dir file = execTreeFromFile dir file
-
+-------
+-- Linearization stuff
 linearizeExecTree :: ExecTree -> ([String], [(String, Expr)])
 linearizeExecTree (ExprLeaf file expr) = ([], [(file, expr)])
 linearizeExecTree (ExprNode file childs) =
@@ -334,18 +329,25 @@ linearizeExecTree (ExprNode file childs) =
                 ([], []) level in
     (files ++ [file], exprs)
 
-linearizeBase :: IO (Maybe ([String], [(String, Expr)]))
-linearizeBase = do
-  mbBase <- baseExecTree
-  case mbBase of
-    Just base -> return $ Just $ linearizeExecTree base
+linearizeCustomBase ::
+  String -> String -> IO (Maybe ([String], [(String, Expr)]))
+linearizeCustomBase baseDir baseFile = do
+  mbTree <- execTreeFromFile baseDir baseFile
+  case mbTree of
+    Just tree -> return $ Just $ linearizeExecTree tree
     _ -> return $ Nothing
 
-linearizeFile :: String -> String -> IO (Maybe ([String], [(String, Expr)]))
-linearizeFile dir file = do
-  mbFile <- fileExecTree dir file
-  case mbFile of
-    Just file -> return $ Just $ linearizeExecTree file
+linearizeDefaultBase :: IO (Maybe ([String], [(String, Expr)]))
+linearizeDefaultBase = do
+  baseDir <- defaultBaseDir
+  baseFile <- defaultBaseFile
+  linearizeCustomBase baseDir baseFile
+
+linearizeUser :: String -> String -> IO (Maybe ([String], [(String, Expr)]))
+linearizeUser userDir userFile = do
+  mbTree <- execTreeFromFile userDir userFile
+  case mbTree of
+    Just tree -> return $ Just $ linearizeExecTree tree
     _ -> return $ Nothing
 
 joinLinearizations ::
@@ -354,14 +356,22 @@ joinLinearizations ::
 joinLinearizations (files1, pairs1) (files2, pairs2) =
   (files1 ++ files2, pairs1 ++ pairs2)
 
-linearizeFileWithBase ::
-  String -> String -> IO (Maybe ([String], [(String, Expr)]))
-linearizeFileWithBase dir file = do
-  mbBaseLinear <- linearizeBase
-  mbFileLinear <- linearizeFile dir file
-  case (mbBaseLinear, mbFileLinear) of
-    (Just baseLinear, Just fileLinear) ->
-      return $ Just $ joinLinearizations baseLinear fileLinear
+linearizeUserWithCustomBase ::
+  String -> String ->
+  String -> String ->
+    IO (Maybe ([String], [(String, Expr)]))
+linearizeUserWithCustomBase baseDir baseFile userDir userFile = do
+  mbBaseLinear <- linearizeCustomBase baseDir baseFile
+  mbUserLinear <- linearizeUser userDir userFile
+  case (mbBaseLinear, mbUserLinear) of
+    (Just baseLinear, Just userLinear) ->
+      return $ Just $ joinLinearizations baseLinear userLinear
     _ -> return $ Nothing
 
+linearizeUserWithDefaultBase ::
+  String -> String -> IO (Maybe ([String], [(String, Expr)]))
+linearizeUserWithDefaultBase userDir userFile = do
+  baseDir <- defaultBaseDir
+  baseFile <- defaultBaseFile
+  linearizeUserWithCustomBase baseDir baseFile userDir userFile
 

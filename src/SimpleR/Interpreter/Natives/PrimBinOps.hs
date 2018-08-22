@@ -46,7 +46,7 @@ atomZip axs ays =
   map (\(ax, ay) -> do { x <- ax; y <- ay; Atom (x, y) }) $ zip axs ays
 
 isVecSym :: Vector -> Bool
-isVecSym (SymVec _ _) = True
+isVecSym (SymVec _ _ _) = True
 isVecSym _ = False
 
 applyBinOp :: VecBinOp -> MemRef -> MemRef -> State ->
@@ -81,9 +81,9 @@ applyBinOp op vecMem1 vecMem2 state
       let (mem, heap2) = heapAlloc obj $ stHeap state
       return $ (mem, state { stHeap = heap2 })
   
-  | Just (DataObj (VecVal (SymVec sym1 ty1)) attrs1)
+  | Just (DataObj (VecVal (SymVec sym1 ty1 len1)) attrs1)
       <- heapLookup vecMem1 $ stHeap state
-  , Just (DataObj (VecVal (SymVec sym2 ty2)) attrs2)
+  , Just (DataObj (VecVal (SymVec sym2 ty2 len2)) attrs2)
       <- heapLookup vecMem2 $ stHeap state
   , attrs1 == attrsEmpty
   , attrs2 == attrsEmpty = do

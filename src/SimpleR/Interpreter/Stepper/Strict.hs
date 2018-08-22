@@ -1,3 +1,5 @@
+{-# LANGUAGE ScopedTypeVariables #-}
+
 module SimpleR.Interpreter.Stepper.Strict
   ( Rule(..)
   , rulePairs
@@ -31,22 +33,21 @@ splitBinds binds =
     ([], []) binds
 
 isMemConcTrue :: MemRef -> Heap -> Maybe Bool
-isMemConcTrue mem heap = error "TODO: IMPLEMENT CONC"
-{-
+isMemConcTrue mem heap =
   case heapLookup mem heap of
     Just (DataObj (VecVal vec) _) ->
       case vec of
-        IntVec (x : _) -> x /= 0
-        DoubleVec (x : _) -> x /= 0
-        ComplexVec (x : _) -> x /= 0
-        BoolVec (x : _) -> x
-        _ -> False
-    _ -> False
--}
+        (IntVec (((Atom x) : _) :: [Atom Int])) -> Just $ x /= 0
+        (DoubleVec (((Atom x) : _) :: [Atom Double])) -> Just $ x /= 0
+        (ComplexVec (((Atom x) : _) :: [Atom Complex])) -> Just $ x /= 0
+        (BoolVec ((Atom x) : _)) -> Just x
+        _ -> Nothing
 
-symMemId :: MemRef -> Heap -> Maybe SmtIdent
-symMemId = error "TODO: IMPLEMENT SYM"
-
+symIdFromMem :: MemRef -> Heap -> Maybe SmtIdent
+symIdFromMem mem heap =
+  case heapLookup mem heap of
+    Just (DataObj (VecVal (SymVec sid _ _)) _) -> Just sid
+    _ -> Nothing
 
 exprFromArg :: Arg -> Expr
 exprFromArg (Arg expr) = expr
@@ -260,7 +261,7 @@ rule_IfRetSym state
   | ResultRed mem <- stRedex state
   , Just (BranchCont exprT exprF, envMem, stack2)
       <- stackPopV $ stStack state
-  , Just sym <- symMemId mem $ stHeap state =
+  , Just sym <- symIdFromMem mem $ stHeap state =
       error "IMPLEMENT THIS THING"
   | otherwise = []
 
@@ -308,7 +309,7 @@ rule_WhileSym state
   | ResultRed mem <- stRedex state
   , Just (LoopCont cont body LoopConfigCond, envMem, stack2)
       <- stackPopV $ stStack state
-  , Just sym <- symMemId mem $ stHeap state =
+  , Just sym <- symIdFromMem mem $ stHeap state =
       error "WHILE FALSE"
   | otherwise = []
 
