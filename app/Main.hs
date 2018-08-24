@@ -10,7 +10,7 @@ main = do
   _ <- case args of
     ("--parse" : dir : []) -> parseFile dir
     ("--parse-test" :  []) -> parseTest
-    ("--run" : file : []) -> runFile file
+    ("--run" : file : ticks : []) -> runFile file (read ticks :: Int)
     _ -> putStrLn "main: unrecognized command"
   -- prog <- parseRFile $ head args
   -- putStrLn $ show prog
@@ -19,11 +19,11 @@ main = do
 
   putStrLn "main: done!"
 
-runFile :: String -> IO ()
-runFile file = do
+runFile :: String -> Int -> IO ()
+runFile file ticks = do
   -- state <- loadFileGuessWithBase $ file
   state <- loadUserGuessWithDefaultBase $ file
-  let redAcc = runN 100 state
+  let redAcc = runN ticks state
   -- putStrLn $ ppHist ([], state)
   -- putStrLn $ show $ length $ compAcc acc
   putStrLn $ ppRedAccum redAcc

@@ -122,7 +122,7 @@ framesFromPairs exprPairs filePairs =
     map (\(file, expr) ->
         case M.lookup file fileMap of
           Just mem -> frameMk mem $ ExprCont expr
-          _ -> error $ "framesFromPairs " ++ show file ++ "\n" ++ show fileMap)
+          _ -> error $ "framesFromPairs: " ++ show file ++ "\n" ++ show fileMap)
         exprPairs
 
 injectPrimBinds :: MemRef -> Heap -> ([(Ident, MemRef)], Heap)
@@ -138,9 +138,11 @@ injectPrimBinds primEnvMem heap =
         ([], heap) primInjectionPairs
   
 -- Environment settings
-envMemOffsetMem :: MemRef
-envMemOffsetMem = memFromInt 2
+heapInitNextFreeMem :: MemRef
+heapInitNextFreeMem = memFromInt 3
 
+baseEnvMem :: MemRef
+baseEnvMem = memNull
 
 -----------
 -- Raw initializaiton tuples
@@ -149,7 +151,7 @@ rawInitsFromUser ::
   (String -> String -> IO (PassResult ([String], [(String, Expr)]))) ->
     IO (Stack, Heap, MemRef, MemRef)
 rawInitsFromUser userDir userFile userLinearizer = do
-  let heap1 = heapEmpty
+  let heap1 = heapEmpty { heapNextMem = heapInitNextFreeMem }
   let dummyFile = "$primitives"
   pass <- userLinearizer userDir userFile
   case pass of
@@ -160,7 +162,7 @@ rawInitsFromUser userDir userFile userLinearizer = do
       let files2 = dummyFile : files
       let fileExprPairs2 = (dummyFile, Var idNull) : fileExprPairs
       -- Allocate the file environments; dummyFile guaranteed to make space
-      let (fileEnvPairs, heap2) = allocFileEnvs files2 envMemOffsetMem heap1
+      let (fileEnvPairs, heap2) = allocFileEnvs files2 baseEnvMem heap1
       let frames = framesFromPairs fileExprPairs2 fileEnvPairs
       case (fileEnvPairs, reverse fileEnvPairs) of
         ((_, primMem) : _, (_, globalMem) : _) ->

@@ -56,9 +56,10 @@ ppExpr :: Expr -> String
 ppExpr expr = show expr
 
 ppRedex :: Redex -> String
+ppRedex (BlankRed) = "BlankRed"
 ppRedex (ResultRed mem) = "ResultRed (" ++ ppMem mem ++ ")"
-ppRedex (EvalRed mem expr) =
-  "EvalRed @ " ++ ppMem mem ++ " (" ++ ppExpr expr ++ ")"
+ppRedex (EvalRed envMem expr) =
+  "EvalRed @ " ++ ppMem envMem ++ " (" ++ ppExpr expr ++ ")"
 
 ppEnv :: Env -> String
 ppEnv env =

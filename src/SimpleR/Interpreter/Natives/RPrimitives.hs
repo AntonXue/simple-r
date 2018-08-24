@@ -9,10 +9,12 @@ module SimpleR.Interpreter.Natives.RPrimitives
   , primIdSet
   , primNameDataPairs
   , primInjectionPairs
+  , idPrimMap
   ) where
 
 import Data.Maybe
 import qualified Data.Set as S
+import qualified Data.Map as M
 
 import SimpleR.Language
 import SimpleR.Interpreter.Commons
@@ -200,7 +202,7 @@ primAll =
   , ("as.raw",          RPrimAsRaw,         [])
 
   -- Vectors
-  , ("c",           RPrimC,              [])
+  , ("c",           RPrimC,              [VarParam])
   , (":",           RPrimColon,          [])
 
   , ("[[",  RPrimVecInd,         [])
@@ -334,6 +336,9 @@ primInjectionPairs =
   map (\(name, _, params) ->
         let primId = idPrimFromString name in
         let paramsId = idsFromParams params in
-          (primId,  (params, NativeLamApp primId paramsId)))
+          (primId, (params, NativeLamApp primId paramsId)))
       primAll
+
+idPrimMap :: M.Map Ident RPrim
+idPrimMap = M.fromList $ map (\(s, p, _) -> (idPrimFromString s, p)) primAll
 

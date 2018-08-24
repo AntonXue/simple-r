@@ -3,6 +3,8 @@ module SimpleR.Interpreter.Commons.SupportUtils where
 import qualified Data.Map as M
 import qualified Data.Set as S
 
+import Debug.Trace
+
 import SimpleR.Language
 import SimpleR.Interpreter.Commons.Support
 import SimpleR.Interpreter.Commons.Vector
@@ -100,11 +102,12 @@ heapEnvLookupDeep envMem id heap
 
 heapEnvLookupDeepFun :: MemRef -> Ident -> Heap -> Maybe MemRef
 heapEnvLookupDeepFun envMem id heap
-  | Just (DataObj (EnvVal env) _) <- heapLookup envMem heap
-  , Just mem <- envLookup id env
-  , Just (DataObj val _) <- heapLookup mem heap =
-      case val of
-        FunVal _ _ _ -> Just mem
+  | Just (DataObj (EnvVal env) _) <- heapLookup envMem heap =
+      case envLookup id env of
+        Just mem ->
+          case heapLookup mem heap of
+            Just (DataObj (FunVal _ _ _) _) -> Just mem
+            _ -> heapEnvLookupDeepFun (envPredMem env) id heap
         _ -> heapEnvLookupDeepFun (envPredMem env) id heap
 
   | otherwise = Nothing
