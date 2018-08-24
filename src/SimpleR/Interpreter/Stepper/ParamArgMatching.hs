@@ -1,5 +1,7 @@
 module SimpleR.Interpreter.Stepper.ParamArgMatching where
 
+import Debug.Trace
+
 import SimpleR.Language
 import SimpleR.Interpreter.Commons
 
@@ -92,10 +94,10 @@ positionalMatch params [] =
   let binds = map (\(i, e) -> (i, Right e)) defaults in
     (binds, [])
 -- When we have variadic parameter, can only hope to get tails of param
-positionalMatch (VarParam : params) _ =
+positionalMatch (VarParam : params) args =
   let defaults = bindsOfDefaults params in
   let binds = map (\(i, e) -> (i, Right e)) defaults in
-    (binds, [])
+    (binds, args)
 -- Regular paramters match non-named arguments (should be filtered earlier!)
 positionalMatch (Param pId : params) (arg : args) =
   case arg of
