@@ -23,7 +23,7 @@ splitEithers (e : es) =
       Right b -> (as, b : bs)
 
 splitBinds ::
-  [(Ident, Either MemRef Expr)] -> ([(Ident, MemRef)], [(Ident, Expr)])
+  [(Ident, Either MemAddr Expr)] -> ([(Ident, MemAddr)], [(Ident, Expr)])
 splitBinds binds =
   foldl
     (\(accL, accR) (id, rhs) ->
@@ -32,7 +32,7 @@ splitBinds binds =
         Right expr -> (accL, accR ++ [(id, expr)]))
     ([], []) binds
 
-isMemConcTrue :: MemRef -> Heap -> Maybe Bool
+isMemConcTrue :: MemAddr -> Heap -> Maybe Bool
 isMemConcTrue mem heap =
   case heapLookup mem heap of
     Just (DataObj (VecVal vec) _) ->
@@ -43,7 +43,7 @@ isMemConcTrue mem heap =
         (BoolVec ((Atom x) : _)) -> Just x
         _ -> Nothing
 
-symIdFromMem :: MemRef -> Heap -> Maybe SmtIdent
+symIdFromMem :: MemAddr -> Heap -> Maybe SmtIdent
 symIdFromMem mem heap =
   case heapLookup mem heap of
     Just (DataObj (VecVal (SymVec sid _ _)) _) -> Just sid
@@ -54,13 +54,13 @@ exprFromArg (Arg expr) = expr
 exprFromArg (Named _ expr) = expr
 exprFromArg (VarArg) = Var idVariadic
 
-padBlankNames :: [Either MemRef (Ident, MemRef)] -> [(String, MemRef)]
+padBlankNames :: [Either MemAddr (Ident, MemAddr)] -> [(String, MemAddr)]
 padBlankNames [] = []
 padBlankNames ((Left mem) : args) = ("", mem) : padBlankNames args
 padBlankNames ((Right (id, mem)) : args) = (idName id, mem) : padBlankNames args
 
 liftVariadics ::
-  [Either MemRef (Ident, MemRef)] -> MemRef -> Heap -> Maybe (MemRef, Heap)
+  [Either MemAddr (Ident, MemAddr)] -> MemAddr -> Heap -> Maybe (MemAddr, Heap)
 liftVariadics args envMem heap = do
   let (names, mems) = unzip $ padBlankNames args
   let namesVal = VecVal $ StringVec (map Atom names)
@@ -71,14 +71,14 @@ liftVariadics args envMem heap = do
   heap4 <- heapEnvInsert idVariadic refsMem envMem heap3
   return (refsMem, heap4)
 
-unwindToLoopCont :: Stack -> Maybe ((Expr, Expr, LoopConfig), MemRef, Stack)
+unwindToLoopCont :: Stack -> Maybe ((Expr, Expr, LoopConfig), MemAddr, Stack)
 unwindToLoopCont stack = do
   (cont, lEnvMem, stack2) <- stackPopV stack
   case cont of
     LoopCont cond body loop -> return ((cond, body, loop), lEnvMem, stack2)
     _ -> unwindToLoopCont stack2
 
-unwindToLamBCont :: Stack -> Maybe (MemRef, MemRef, Stack)
+unwindToLamBCont :: Stack -> Maybe (MemAddr, MemAddr, Stack)
 unwindToLamBCont stack = do
   (cont, lEnvMem, stack2) <- stackPopV stack
   case cont of

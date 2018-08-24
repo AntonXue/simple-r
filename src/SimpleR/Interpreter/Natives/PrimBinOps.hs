@@ -49,8 +49,8 @@ isVecSym :: Vector -> Bool
 isVecSym (SymVec _ _ _) = True
 isVecSym _ = False
 
-applyBinOp :: VecBinOp -> MemRef -> MemRef -> State ->
-  Maybe (MemRef, State)
+applyBinOp :: VecBinOp -> MemAddr -> MemAddr -> State ->
+  Maybe (MemAddr, State)
 applyBinOp op vecMem1 vecMem2 state
   | Just (DataObj (VecVal vec1) attrs1) <- heapLookup vecMem1 $ stHeap state
   , Just (DataObj (VecVal vec2) attrs2) <- heapLookup vecMem2 $ stHeap state

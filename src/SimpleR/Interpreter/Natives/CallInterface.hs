@@ -10,6 +10,11 @@ import SimpleR.Interpreter.Natives.RPrimitives
 import SimpleR.Interpreter.Natives.PrimVecManipOps
 
 
+-------
+-- Register the native calls here.
+-- Calls to the primitive functions should modify _ONLY_ the heap
+-- It's up the the `nativeCall` function to decide how to handle
+-- the returned values.
 nativeCall :: State -> [State]
 nativeCall state
   | EvalRed envMem (NativeLamApp fun args) <- stRedex state

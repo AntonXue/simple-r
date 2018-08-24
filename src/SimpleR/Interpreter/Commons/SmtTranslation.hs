@@ -8,19 +8,19 @@ import SimpleR.Interpreter.Commons.SupportUtils
 import SimpleR.Interpreter.Commons.Vector
 import SimpleR.Smt
 
-smtCanonMem :: MemRef -> String
+smtCanonMem :: MemAddr -> String
 smtCanonMem mem = "mem$" ++ (show $ memAddr mem)
 
-smtCanonMemLen :: MemRef -> String
+smtCanonMemLen :: MemAddr -> String
 smtCanonMemLen mem = smtCanonMem mem ++ "$length"
 
-symbFromMem :: MemRef -> SmtIdent
+symbFromMem :: MemAddr -> SmtIdent
 symbFromMem mem = sidFromString $ smtCanonMem mem
 
 lenSidFromSid :: SmtIdent -> SmtIdent
 lenSidFromSid sid = sidFromString $ stringFromSid sid ++ "$length"
 
-symVecFromVec :: MemRef -> Vector -> State -> (MemRef, State)
+symVecFromVec :: MemAddr -> Vector -> State -> (MemAddr, State)
 symVecFromVec mem vec state = undefined
 
 

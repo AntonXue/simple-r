@@ -12,9 +12,9 @@ bindsOfDefaults ((Param _) : ps) = bindsOfDefaults ps
 bindsOfDefaults (VarParam : ps) = bindsOfDefaults ps
 bindsOfDefaults ((Default id expr) : ps) = (id, expr) : bindsOfDefaults ps
 
--- Linearize the arguments into a [Either MemRef (Ident, MemRef)] if possible.
+-- Linearize the arguments into a [Either MemAddr (Ident, MemAddr)] if possible.
 -- Flattens the variadics.
-pullArgs :: [(Arg, MemRef)] -> Heap -> Maybe [Either MemRef (Ident, MemRef)]
+pullArgs :: [(Arg, MemAddr)] -> Heap -> Maybe [Either MemAddr (Ident, MemAddr)]
 pullArgs [] _ = Just []
 pullArgs ((Arg _, mem) : args) heap
   | Just args2 <- pullArgs args heap = Just $ (Left mem) : args2
@@ -55,15 +55,15 @@ dropUseds (id : ids) params = dropUseds ids $ dropUsed id params
 -- The idea is that we go through a list of arguments, and gradually
 -- filter out the [Param] in the first element of the accumulator triple,
 -- which is then left to be positionally matched with
--- the second element, consisting of [Either MemRef (Ident, MemRef)]
+-- the second element, consisting of [Either MemAddr (Ident, MemAddr)]
 -- The accumulator contains a triple of
 --   [Param] -- the parameters still unmatched
---   [Either MemRef (Ident, MemRef)] -- args to be positionally matched
---   [(Ident, MemRef)] -- The default argument pairings
+--   [Either MemAddr (Ident, MemAddr)] -- args to be positionally matched
+--   [(Ident, MemAddr)] -- The default argument pairings
 defMatchFoldL ::
-  ([Param], [Either MemRef (Ident, MemRef)], [(Ident, MemRef)]) ->
-  (Either MemRef (Ident, MemRef)) ->
-    ([Param], [Either MemRef (Ident, MemRef)], [(Ident, MemRef)])
+  ([Param], [Either MemAddr (Ident, MemAddr)], [(Ident, MemAddr)]) ->
+  (Either MemAddr (Ident, MemAddr)) ->
+    ([Param], [Either MemAddr (Ident, MemAddr)], [(Ident, MemAddr)])
 defMatchFoldL (params, posArgs, namedArgs) arg =
   case arg of
     Left mem -> (params, posArgs ++ [arg], namedArgs)
@@ -80,12 +80,12 @@ defMatchFoldL (params, posArgs, namedArgs) arg =
 -- Also detect the variadic match we output.
 -- Outputs (the matched positional arguments, variadic arguments with naming)
 --  [Param] -- the parameters
---  [Either MemRef (Ident, MemRef)] -- the arguments
+--  [Either MemAddr (Ident, MemAddr)] -- the arguments
 positionalMatch ::
   [Param] ->
-  [Either MemRef (Ident, MemRef)] ->
-    ([(Ident, Either MemRef Expr)],
-     [Either MemRef (Ident, MemRef)])
+  [Either MemAddr (Ident, MemAddr)] ->
+    ([(Ident, Either MemAddr Expr)],
+     [Either MemAddr (Ident, MemAddr)])
 -- In the case where we have no arguments, just discard everything
 positionalMatch [] _ = ([], [])
 -- When we have only parameters, we must extract the default values
@@ -117,9 +117,9 @@ positionalMatch ((Default pId _) : params) (arg : args) =
         ((pId, Left mem) : binds, vars)
 
 matchLamApp ::
-  [Param] -> [(Arg, MemRef)] -> Env -> Heap ->
-    Maybe ([(Ident, Either MemRef Expr)],
-           [Either MemRef (Ident, MemRef)])
+  [Param] -> [(Arg, MemAddr)] -> Env -> Heap ->
+    Maybe ([(Ident, Either MemAddr Expr)],
+           [Either MemAddr (Ident, MemAddr)])
 matchLamApp params args env heap = do
   pulled <- pullArgs args heap
   let acc = (params, [], [])

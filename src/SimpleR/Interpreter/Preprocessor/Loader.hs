@@ -96,7 +96,7 @@ linearizeUserWithDefaultBaseWithPasses userDir userFile = do
 
 -- Allocate a list of environments that correspond to each file,
 -- with nesting order such that the first file is the most nested
-allocFileEnvs :: [String] -> MemRef -> Heap -> ([(String, MemRef)], Heap)
+allocFileEnvs :: [String] -> MemAddr -> Heap -> ([(String, MemAddr)], Heap)
 allocFileEnvs [] _ heap = ([], heap)
 allocFileEnvs files botEnvMem heap =
   let envs = map (\f -> DataObj (EnvVal envEmpty) attrsEmpty) files in
@@ -114,9 +114,9 @@ allocFileEnvs files botEnvMem heap =
 
 -- Takes the [(String, Expr)],
 -- which is each file associated with an expression,
--- as well as a [(String, MemRef)], which is the memory for the env of
+-- as well as a [(String, MemAddr)], which is the memory for the env of
 -- each file, and then flattens them out and stuff
-framesFromPairs :: [(String, Expr)] -> [(String, MemRef)] -> [Frame]
+framesFromPairs :: [(String, Expr)] -> [(String, MemAddr)] -> [Frame]
 framesFromPairs exprPairs filePairs =
   let fileMap = M.fromList filePairs in
     map (\(file, expr) ->
@@ -125,7 +125,7 @@ framesFromPairs exprPairs filePairs =
           _ -> error $ "framesFromPairs: " ++ show file ++ "\n" ++ show fileMap)
         exprPairs
 
-injectPrimBinds :: MemRef -> Heap -> ([(Ident, MemRef)], Heap)
+injectPrimBinds :: MemAddr -> Heap -> ([(Ident, MemAddr)], Heap)
 injectPrimBinds primEnvMem heap =
   foldl (\(accs, hp) (id, (params, body)) ->
           let fEnv = envEmpty { envPredMem = primEnvMem } in
@@ -138,10 +138,10 @@ injectPrimBinds primEnvMem heap =
         ([], heap) primInjectionPairs
   
 -- Environment settings
-heapInitNextFreeMem :: MemRef
+heapInitNextFreeMem :: MemAddr
 heapInitNextFreeMem = memFromInt 3
 
-baseEnvMem :: MemRef
+baseEnvMem :: MemAddr
 baseEnvMem = memNull
 
 -----------
@@ -149,7 +149,7 @@ baseEnvMem = memNull
 rawInitsFromUser ::
   String -> String ->
   (String -> String -> IO (PassResult ([String], [(String, Expr)]))) ->
-    IO (Stack, Heap, MemRef, MemRef)
+    IO (Stack, Heap, MemAddr, MemAddr)
 rawInitsFromUser userDir userFile userLinearizer = do
   let heap1 = heapEmpty { heapNextMem = heapInitNextFreeMem }
   let dummyFile = "$primitives"
@@ -172,19 +172,19 @@ rawInitsFromUser userDir userFile userLinearizer = do
         error $ "rawInitsFromFile: " ++ (show msgs)
 
 rawInitsFromUserWithNoBase ::
-  String -> String -> IO (Stack, Heap, MemRef, MemRef)
+  String -> String -> IO (Stack, Heap, MemAddr, MemAddr)
 rawInitsFromUserWithNoBase userDir userFile = do
   rawInitsFromUser userDir userFile linearizeUserWithPasses
 
 rawInitsFromUserWithDefaultBase ::
-  String -> String -> IO (Stack, Heap, MemRef, MemRef)
+  String -> String -> IO (Stack, Heap, MemAddr, MemAddr)
 rawInitsFromUserWithDefaultBase userDir userFile = do
   rawInitsFromUser userDir userFile linearizeUserWithDefaultBaseWithPasses
 
 rawInitsFromUserWithCustomBase ::
   String -> String ->
   String -> String ->
-    IO (Stack, Heap, MemRef, MemRef)
+    IO (Stack, Heap, MemAddr, MemAddr)
 rawInitsFromUserWithCustomBase baseDir baseFile userDir userFile =
   rawInitsFromUser userDir userFile
     (linearizeUserWithCustomBaseWithPasses baseDir baseFile)
@@ -197,7 +197,7 @@ initPureIds = primIds
 -- Actual state initialization
 rawInitState ::
   String -> String ->
-  (String -> String -> IO (Stack, Heap, MemRef, MemRef)) ->
+  (String -> String -> IO (Stack, Heap, MemAddr, MemAddr)) ->
     IO State
 rawInitState userDir userFile initializer = do
   (stack, heap, globalMem, primMem) <- initializer userDir userFile

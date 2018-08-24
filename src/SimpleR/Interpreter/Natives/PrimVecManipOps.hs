@@ -31,7 +31,7 @@ import SimpleR.Interpreter.Commons
 
 --   , ("c",           RPrimC,              [VarParam])
 -- The `c` function takes a variadic list, does not set the redex
-prim_C :: MemRef -> State -> [(MemRef, State)]
+prim_C :: MemAddr -> State -> [(MemAddr, State)]
 prim_C refsMem state
   | Just (DataObj (RefsVal varMems) attrs)
       <- heapLookup refsMem $ stHeap state

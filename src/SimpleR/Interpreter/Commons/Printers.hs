@@ -44,7 +44,7 @@ ppList lst = injNewline $ map show lst
 
 ---
 
-ppMem :: MemRef -> String
+ppMem :: MemAddr -> String
 ppMem mem = "Mem (" ++ (show $ memAddr mem) ++ ")"
 
 ppId :: Ident -> String
