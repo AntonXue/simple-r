@@ -126,6 +126,6 @@ matchLamApp params args env heap = do
   let (remParams, remArgs, namedArgs) = foldl defMatchFoldL acc pulled
   let (matched, vars) = positionalMatch remParams remArgs
   let binds = map (\(i, m) -> (i, Left m)) namedArgs
-  return (binds, vars)
+  return (binds ++ matched, vars)
 
 

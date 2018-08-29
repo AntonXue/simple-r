@@ -7,6 +7,8 @@ module SimpleR.Interpreter.Stepper.Strict
 
 import Data.Maybe
 
+import Debug.Trace
+
 import SimpleR.Language
 import SimpleR.Interpreter.Commons
 import SimpleR.Interpreter.Stepper.ParamArgMatching
@@ -91,7 +93,7 @@ rule_Ident :: State -> [State]
 rule_Ident state
   | EvalRed envMem (Var id) <- stRedex state =
       let lookupFun = case stackPopV $ stStack state of
-            Just (LamACont _ _ _ _, _, _) -> heapEnvLookupDeepFun
+            Just (LamACont Nothing _ _ _, _, _) -> heapEnvLookupDeepFun
             _ -> heapEnvLookupDeep in
       let mem = fromMaybe memNull $ lookupFun envMem id $ stHeap state in
         [state { stRedex = ResultRed mem }]

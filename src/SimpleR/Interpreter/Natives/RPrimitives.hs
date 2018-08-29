@@ -214,7 +214,7 @@ primAll =
   , ("dim<-",       RPrimDimAssign,       [])
   , ("dimnames",    RPrimDimNames,       [])
   , ("dimnames<-",  RPrimDimNamesAssign, [])
-  , ("length",      RPrimLength,        [])
+  , ("length",      RPrimLength,        [Param (idFromString "vec")])
   , ("length<-",    RPrimLengthAssign,  [])
   , ("levels",      RPrimLevels,        [])
   , ("levels<-",    RPrimLevelsAssign,  [])

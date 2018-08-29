@@ -24,11 +24,15 @@ nativeCall state
       case M.lookup fun idPrimMap of
         Just RPrimC ->
           case argMems of
-            (refsMem : []) ->
-              case prim_C refsMem state of
-                ((m, s) : []) -> [s { stRedex = ResultRed m }]
-                _ -> error $ "nativeCall: RPrimC call failed"
+            (refsMem : []) -> prim_C refsMem state
             _ -> error $ "nativeCall: RPrimC with " ++ show argMems
+
+        Just RPrimLength ->
+          case argMems of
+            (vecMem : []) -> prim_Length vecMem state
+            _ -> error $ "nativeCall: RPrimLength with " ++ show argMems
+
+
         _ -> []
 
   | otherwise = []
