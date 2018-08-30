@@ -1,36 +1,28 @@
-#load unix.cma
 
 open Char
 open List
 open String
 
 open Sys
+open Unix
 
 let rmd2r_script : unit -> string =
   fun _ ->
     (* getcwd () ^ "/src/SimpleR/R/Parser/hack/rmd2rscript.R" *)
     "/home/celery/foo/harvard/simple-r/src/SimpleR/R/Parser/hack/rmd2rscript.R"
 
-let rmd_tmp : unit -> string =
-  fun _ ->
-    (* getcwd () ^ "/~rmd.tmp" *)
-    "/home/celery/foo/harvard/simple-r/~rmd.tmp"
 
 let read_R_file : string -> string =
   fun r_file ->
-    let _ = Unix.open_process "hey" in
-    let cmd_str = "rm -rf " ^ rmd_tmp () ^ "&& " ^
-                  "touch " ^ rmd_tmp () ^ " && " ^
-                  "Rscript " ^ rmd2r_script () ^ " " ^ r_file ^
-                              " > " ^ rmd_tmp () in
-    let _ = command cmd_str in
+    let cmd_str = "Rscript " ^ rmd2r_script () ^ " " ^ r_file in
+    let in_channel = open_process_in cmd_str in
     let lines = ref [] in
-    let in_chan = open_in (rmd_tmp ()) in
       try
-        while true; do lines := input_line in_chan :: !lines; done; "";
+        while true; do lines := input_line in_channel :: !lines; done; "";
       with End_of_file ->
-        let _ = close_in in_chan in
+        let _ = close_in in_channel in
           String.concat "\n" (rev !lines)
+
 
 let parse_R_file : string -> unit Rast.program =
   fun r_file ->

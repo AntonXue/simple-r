@@ -22,14 +22,6 @@ port_path :: String
 port_path =
   "/home/celery/foo/harvard/simple-r/src/SimpleR/R/Parser/hack/absyn_generator.byte"
 
--- test_str = "RVar (RIdent {rid_pkg = Nothing, rid_name = \"a\", rid_src = Nothing, rid_annot = Nothing})"
-
--- test_str = "RProgram [RBinOp RAssign (RVar (RIdent {rid_pkg = Nothing, rid_name = \"a\", rid_src = Nothing, rid_annot = Nothing})) (RConst (RNumConst (RNumInt 0)))]"
-
--- test_str = "RProgram [RFor (RIdent {rid_pkg = Nothing, rid_name = \"i\", rid_src = Nothing, rid_annot = Nothing}) (RBinOp RRange (RConst (RNumConst (RNumInt 1))) (RConst (RNumConst (RNumInt 5)))) (RSeq [RBinOp RAssign (RVar (RIdent {rid_pkg = Nothing, rid_name = \"a\", rid_src = Nothing, rid_annot = Nothing})) (RBinOp RPlus (RVar (RIdent {rid_pkg = Nothing, rid_name = \"a\", rid_src = Nothing, rid_annot = Nothing})) (RVar (RIdent {rid_pkg = Nothing, rid_name = \"i\", rid_src = Nothing, rid_annot = Nothing})))])]"
-
--- testParse :: Maybe RProgram
--- testParse = maybeRead test_str
 
 uniChars :: [String]
 uniChars = (map show [0 .. 9]) ++
