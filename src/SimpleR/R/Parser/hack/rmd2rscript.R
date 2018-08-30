@@ -53,7 +53,6 @@ rmd2rscript <- function(infile){
 args <- commandArgs(trailingOnly=TRUE)
 file <- args[[1]]
 
-
 if (substr(file, nchar(file) - 1, nchar(file)) == "md") {
   rmd2rscript(file)
 } else {

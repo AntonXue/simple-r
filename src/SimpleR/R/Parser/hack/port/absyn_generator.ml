@@ -1,3 +1,4 @@
+#load unix.cma
 
 open Char
 open List
@@ -17,7 +18,11 @@ let rmd_tmp : unit -> string =
 
 let read_R_file : string -> string =
   fun r_file ->
-    let cmd_str = "Rscript " ^ rmd2r_script () ^ " " ^ r_file ^ " > " ^ rmd_tmp () in
+    let _ = Unix.open_process "hey" in
+    let cmd_str = "rm -rf " ^ rmd_tmp () ^ "&& " ^
+                  "touch " ^ rmd_tmp () ^ " && " ^
+                  "Rscript " ^ rmd2r_script () ^ " " ^ r_file ^
+                              " > " ^ rmd_tmp () in
     let _ = command cmd_str in
     let lines = ref [] in
     let in_chan = open_in (rmd_tmp ()) in

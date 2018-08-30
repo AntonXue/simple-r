@@ -32,7 +32,10 @@ nativeCall state
             (vecMem : []) -> prim_Length vecMem state
             _ -> error $ "nativeCall: RPrimLength with " ++ show argMems
 
-
+        Just RPrimColon ->
+          case argMems of
+            (lowMem : highMem : []) -> prim_Colon lowMem highMem state
+            _ -> error $ "nativeCall: RPrimColon with " ++ show argMems
         _ -> []
 
   | otherwise = []

@@ -78,3 +78,20 @@ prim_Length vecMem state
 
   | otherwise = []
 
+--   , (":",           RPrimColon,          [])
+prim_Colon :: MemAddr -> MemAddr -> State -> [State]
+prim_Colon lowMem highMem state
+  | Just (DataObj (VecVal (IntVec ((Atom low) : _))) attrsLow)
+      <- heapLookup lowMem $ stHeap state
+  , Just (DataObj (VecVal (IntVec ((Atom high) : _))) attrsHigh)
+      <- heapLookup highMem $ stHeap state =
+      let vec = IntVec $ map Atom [low .. high] in
+      let obj = DataObj (VecVal vec) attrsEmpty in
+      let (mem, heap2) = heapAlloc obj $ stHeap state in
+        [state { stRedex = ResultRed mem
+               , stHeap = heap2 }]
+
+  | otherwise = []
+
+
+

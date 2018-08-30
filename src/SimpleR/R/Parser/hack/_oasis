@@ -11,9 +11,9 @@ Plugins: META (0.4), DevFiles (0.4)
 Executable "absyn_generator"
   Path: port/
   MainIs: absyn_generator.ml
-  BuildDepends: parser
+  BuildDepends: parser, base_unix
 
 Library "parser"
   Path: port/
-  Modules: Parser, Rast
+  Modules: Parser, Rast, base_unix
 

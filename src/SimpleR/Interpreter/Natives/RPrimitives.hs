@@ -202,8 +202,8 @@ primAll =
   , ("as.raw",          RPrimAsRaw,         [])
 
   -- Vectors
-  , ("c",           RPrimC,              [VarParam])
-  , (":",           RPrimColon,          [])
+  , ("c",           RPrimC,     [VarParam])
+  , (":",           RPrimColon, [Param (idFromString "low"), Param (idFromString "high")])
 
   , ("[[",  RPrimVecInd,         [])
   , ("[[<-",  RPrimVecIndAssign,         [])

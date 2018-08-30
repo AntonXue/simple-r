@@ -4,7 +4,7 @@ import Test.Tasty
 
 import TestUtils
 
-import qualified SimpleConcrete.Tests as SimpleConcrete
+import qualified Simple.Tests as Simple
 
 main :: IO ()
 main = do
@@ -14,7 +14,7 @@ main = do
 tests :: TestTree
 tests =
   testGroup "Tests"
-    [ SimpleConcrete.tests
+    [ Simple.tests
 
     ]
 

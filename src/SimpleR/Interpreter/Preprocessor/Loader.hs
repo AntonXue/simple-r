@@ -67,7 +67,8 @@ linearizeUserWithPasses dir file = do
         PassOkay okays -> return (PassOkay (files, okays))
         PassFail msgs -> return (PassFail msgs)
     _ ->
-      return $ PassFail ["linearizeFileWithPasses: filed to linearize"]
+      return $ PassFail ["linearizeFileWithPasses: failed to linearize "
+                          ++ dir ++ "/" ++ file]
 
 linearizeUserWithCustomBaseWithPasses ::
   String -> String ->

@@ -1,4 +1,4 @@
-module SimpleConcrete.Tests where
+module Simple.Tests where
 
 import Test.Tasty
 import Test.Tasty.HUnit
@@ -8,7 +8,10 @@ import TestUtils
 import Lib
 
 doPath :: String -> String
-doPath file = "SimpleConcrete/test-files/" ++ file
+doPath file = "/home/celery/foo/harvard/simple-r/test/Simple/test-files/" ++ file
+
+defN :: Int
+defN = 1000
 
 tests :: TestTree
 tests =
@@ -21,13 +24,19 @@ tests =
     , testCase "Vector creation" $
         assertBool
           ("Expects [4444, 5555, 6666]") $
-            loadAndRunNoBase (doPath "vec-make.R") 1000 ==
+            loadAndRunNoBase (doPath "vec-make.R") defN ==
               [Just (VecVal (IntVec [Atom 4444, Atom 5555, Atom 6666]))]
 
     , testCase "Vector length" $
         assertBool
           ("Expects [6]") $
-            loadAndRunNoBase (doPath "vec-length.R") 1000 ==
+            loadAndRunNoBase (doPath "vec-length.R") defN ==
               [Just (VecVal (IntVec [Atom 6]))]
+
+    , testCase "Vector colon" $
+        assertBool
+          ("Expects [3, 4, 5, 6, 7, 8, 9]") $
+            loadAndRunNoBase (doPath "vec-colon.R") defN ==
+            [Just (VecVal (IntVec (map Atom [3, 4, 5, 6, 7, 8, 9])))]
     ]
 
