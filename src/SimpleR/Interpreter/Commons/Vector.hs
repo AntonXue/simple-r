@@ -26,6 +26,7 @@ module SimpleR.Interpreter.Commons.Vector
   , joinType
   , vecPairJoinType
   , vecPairLengthen
+  , vecPairLengthenJoinType
   ) where
 
 import Data.Maybe
@@ -318,4 +319,7 @@ vecPairLengthen (vec1, vec2) =
     else
       (vecResize len2 vec1, vec2)
 
+vecPairLengthenJoinType :: (Vector, Vector) -> (Vector, Vector)
+vecPairLengthenJoinType (vec1, vec2) =
+  vecPairLengthen $ vecPairJoinType (vec1, vec2)
 
