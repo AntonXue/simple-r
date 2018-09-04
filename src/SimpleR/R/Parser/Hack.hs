@@ -33,7 +33,7 @@ uniReplace str = foldl' (\acc u -> replace ("\\u" ++ u) u acc) str uniChars
 
 parseRFile :: String -> IO (Maybe RProgram)
 parseRFile file = do
-  traceIO $ "parseRFile: parsing " ++ file
+  -- traceIO $ "parseRFile: parsing " ++ file
   port_handles <- createProcess (proc port_path [file]) {std_out = CreatePipe}
   case port_handles of
     (_, Just out_handle, _, _) -> do
@@ -50,7 +50,7 @@ parseRFile file = do
           return Nothing
 
         Just rprog -> do
-          traceIO $ "parseRFile: " ++ file ++ " success"
+          -- traceIO $ "parseRFile: " ++ file ++ " success"
           return $ Just rprog
 
     _ -> do
